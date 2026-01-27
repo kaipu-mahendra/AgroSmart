@@ -1,0 +1,15 @@
+# Ignore ML models
+*.h5
+*.keras
+*.pkl
+
+# Ignore datasets
+PlantVillage/
+*.csv
+
+# Ignore temp folders
+temp/
+archive*/
+
+# Ignore Windows junk
+desktop.ini

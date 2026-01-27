@@ -1,0 +1,1373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Crop Yield Prediction</title>
+    <style>
+        :root {
+            --primary: #2E7D32;
+            --primary-dark: #1B5E20;
+            --success: #4CAF50;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        /* REALISTIC FARM SCENE */
+        .scene {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .scene svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Slow, realistic plant growth - 35 second cycle */
+        .plant {
+            transform-origin: 50% 100%;
+        }
+
+        .grow {
+            animation: plantGrow var(--time, 35s) ease-in-out infinite;
+            animation-delay: var(--delay, 0s);
+        }
+
+        @keyframes plantGrow {
+            0% { transform: scaleY(0); opacity: 0; }
+            5% { transform: scaleY(0.08); opacity: 0.4; }
+            15% { transform: scaleY(0.25); opacity: 0.6; }
+            30% { transform: scaleY(0.5); opacity: 0.8; }
+            50% { transform: scaleY(0.85); opacity: 0.95; }
+            60%, 80% { transform: scaleY(1); opacity: 1; }
+            92% { transform: scaleY(0.9); opacity: 0.6; }
+            100% { transform: scaleY(0); opacity: 0; }
+        }
+
+        /* Gentle breeze sway */
+        .sway {
+            animation: breezeSway var(--sway, 5s) ease-in-out infinite;
+            transform-origin: 50% 100%;
+        }
+
+        @keyframes breezeSway {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(1deg); }
+            75% { transform: rotate(-1deg); }
+        }
+
+        /* Sun animations */
+        .sun-body {
+            animation: sunGlow 6s ease-in-out infinite;
+        }
+
+        @keyframes sunGlow {
+            0%, 100% { opacity: 1; filter: drop-shadow(0 0 30px rgba(255,200,50,0.6)); }
+            50% { opacity: 0.95; filter: drop-shadow(0 0 50px rgba(255,200,50,0.8)); }
+        }
+
+        .sun-rays {
+            animation: raysRotate 200s linear infinite;
+            transform-origin: center;
+        }
+
+        @keyframes raysRotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Cloud drift */
+        .cloud {
+            animation: cloudDrift var(--speed, 90s) linear infinite;
+        }
+
+        @keyframes cloudDrift {
+            0% { transform: translateX(-200px); }
+            100% { transform: translateX(2200px); }
+        }
+
+        /* Flying birds */
+        .flock {
+            animation: birdPath var(--fly, 30s) linear infinite;
+        }
+
+        @keyframes birdPath {
+            0% { transform: translate(-100px, 0); }
+            25% { transform: translate(500px, -15px); }
+            50% { transform: translate(1000px, 10px); }
+            75% { transform: translate(1500px, -10px); }
+            100% { transform: translate(2100px, 0); }
+        }
+
+        .wings {
+            animation: flapWings 0.35s ease-in-out infinite;
+        }
+
+        @keyframes flapWings {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(-0.5); }
+        }
+
+        /* Realistic Waterfall */
+        .waterfall-flow {
+            animation: waterFlow 2s linear infinite;
+        }
+
+        @keyframes waterFlow {
+            0% { transform: translateY(-20px); opacity: 0; }
+            10% { opacity: 0.95; }
+            90% { opacity: 0.95; }
+            100% { transform: translateY(140px); opacity: 0; }
+        }
+
+        .waterfall-stream {
+            animation: streamFlow 1.5s ease-in infinite;
+        }
+
+        @keyframes streamFlow {
+            0% { transform: translateY(0) scaleY(1); opacity: 0.9; }
+            50% { transform: translateY(60px) scaleY(1.3); opacity: 0.95; }
+            100% { transform: translateY(130px) scaleY(1.5); opacity: 0.7; }
+        }
+
+        .splash {
+            animation: splashBounce 0.8s ease-out infinite;
+        }
+
+        @keyframes splashBounce {
+            0%, 100% { transform: scale(0.8) translateY(0); opacity: 0.9; }
+            50% { transform: scale(1.2) translateY(-8px); opacity: 0.6; }
+        }
+
+        .splash-droplet {
+            animation: dropletSplash 1.2s ease-out infinite;
+        }
+
+        @keyframes dropletSplash {
+            0% { transform: translate(0, 0) scale(1); opacity: 0.9; }
+            50% { transform: translate(var(--dx, 10px), var(--dy, -15px)) scale(0.6); opacity: 0.7; }
+            100% { transform: translate(var(--dx2, 15px), 10px) scale(0.3); opacity: 0; }
+        }
+
+        .ripples {
+            animation: rippleOut 3s ease-out infinite;
+            transform-origin: center;
+        }
+
+        @keyframes rippleOut {
+            0% { transform: scale(0.2); opacity: 0.9; }
+            100% { transform: scale(3); opacity: 0; }
+        }
+
+        .mist {
+            animation: mistDrift 12s ease-in-out infinite;
+        }
+
+        @keyframes mistDrift {
+            0%, 100% { transform: translateX(0) translateY(0); opacity: 0.2; }
+            25% { transform: translateX(15px) translateY(-5px); opacity: 0.4; }
+            50% { transform: translateX(30px) translateY(-2px); opacity: 0.35; }
+            75% { transform: translateX(20px) translateY(-8px); opacity: 0.45; }
+        }
+
+        .mist-rise {
+            animation: mistRise 8s ease-in-out infinite;
+        }
+
+        @keyframes mistRise {
+            0%, 100% { transform: translateY(0); opacity: 0.15; }
+            50% { transform: translateY(-20px); opacity: 0.35; }
+        }
+
+        /* Canal water flow */
+        .canal-flow {
+            animation: canalMove 4s linear infinite;
+        }
+
+        @keyframes canalMove {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(40px); }
+        }
+
+        .canal-ripple {
+            animation: canalRipple 2s ease-in-out infinite;
+        }
+
+        @keyframes canalRipple {
+            0%, 100% { transform: scaleX(1); opacity: 0.6; }
+            50% { transform: scaleX(1.1); opacity: 0.3; }
+        }
+
+        .canal-shimmer {
+            animation: shimmer 3s ease-in-out infinite;
+        }
+
+        @keyframes shimmer {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.7; }
+        }
+
+        /* Water flow animation - left to right */
+        .water-flow {
+            animation: waterFlowLR 8s linear infinite;
+        }
+
+        @keyframes waterFlowLR {
+            0% { transform: translateX(-100px); }
+            100% { transform: translateX(100px); }
+        }
+
+        .water-flow-fast {
+            animation: waterFlowFast 5s linear infinite;
+        }
+
+        @keyframes waterFlowFast {
+            0% { transform: translateX(-80px); }
+            100% { transform: translateX(80px); }
+        }
+
+        .flow-debris {
+            animation: debrisFlow 12s linear infinite;
+        }
+
+        @keyframes debrisFlow {
+            0% { transform: translateX(-200px); opacity: 0; }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.6; }
+            100% { transform: translateX(2100px); opacity: 0; }
+        }
+
+        /* Grain head drooping under weight */
+        .grain-head {
+            animation: grainDroop 5s ease-in-out infinite;
+            transform-origin: 0% 0%;
+        }
+
+        @keyframes grainDroop {
+            0%, 100% { transform: rotate(10deg); }
+            50% { transform: rotate(18deg); }
+        }
+
+        /* Cotton boll bloom */
+        .cotton-boll {
+            animation: bollBloom 35s ease-in-out infinite;
+            animation-delay: var(--delay, 12s);
+        }
+
+        @keyframes bollBloom {
+            0%, 40% { transform: scale(0); opacity: 0; }
+            55%, 85% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
+        /* Tomato ripening */
+        .tomato-fruit {
+            animation: tomatoRipen 35s ease-in-out infinite;
+            animation-delay: var(--delay, 10s);
+        }
+
+        @keyframes tomatoRipen {
+            0%, 35% { fill: #7CB342; transform: scale(0.3); }
+            50% { fill: #FDD835; transform: scale(0.7); }
+            65%, 85% { fill: #E53935; transform: scale(1); }
+            100% { fill: #7CB342; transform: scale(0.3); }
+        }
+
+        /* Leaf rustle */
+        .leaf {
+            animation: leafRustle var(--rustle, 3s) ease-in-out infinite;
+            transform-origin: 0% 100%;
+        }
+
+        @keyframes leafRustle {
+            0%, 100% { transform: rotate(0deg); }
+            33% { transform: rotate(3deg); }
+            66% { transform: rotate(-2deg); }
+        }
+
+        /* Form container */
+        .container {
+            background: rgba(255, 255, 255, 0.97);
+            width: 100%;
+            max-width: 700px;
+            padding: 32px;
+            border-radius: 20px;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15);
+            position: relative;
+            z-index: 10;
+            backdrop-filter: blur(10px);
+        }
+
+        h2 {
+            text-align: center;
+            color: var(--primary);
+            margin-bottom: 28px;
+            font-size: 26px;
+            font-weight: 700;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 18px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 12px 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            background: #fafafa;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(46, 125, 50, 0.1);
+        }
+
+        .btn {
+            grid-column: 1 / -1;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(46, 125, 50, 0.35);
+        }
+
+        .result {
+            margin-top: 24px;
+            padding: 20px;
+            background: linear-gradient(135deg, #E8F5E9, #C8E6C9);
+            border-radius: 12px;
+            text-align: center;
+            border-left: 5px solid var(--success);
+        }
+
+        .result h3 {
+            color: var(--primary-dark);
+            margin-bottom: 8px;
+        }
+
+        .result p {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .error-message {
+            margin-top: 24px;
+            padding: 20px;
+            background: #ffebee;
+            border-radius: 12px;
+            text-align: center;
+            border-left: 5px solid #c62828;
+            color: #c62828;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="scene">
+    <svg viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+        <defs>
+            <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#1e3c72"/>
+                <stop offset="25%" stop-color="#4a90c2"/>
+                <stop offset="50%" stop-color="#87CEEB"/>
+                <stop offset="75%" stop-color="#B0E0E6"/>
+                <stop offset="100%" stop-color="#E0F4FF"/>
+            </linearGradient>
+
+            <radialGradient id="sunGrad" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#FFFDE7"/>
+                <stop offset="40%" stop-color="#FFEB3B"/>
+                <stop offset="70%" stop-color="#FFC107"/>
+                <stop offset="100%" stop-color="#FF980050"/>
+            </radialGradient>
+
+            <radialGradient id="haloGrad" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#FFEB3B50"/>
+                <stop offset="50%" stop-color="#FFC10720"/>
+                <stop offset="100%" stop-color="#FFC10700"/>
+            </radialGradient>
+
+            <linearGradient id="mtGrad1" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#5D6D7E"/>
+                <stop offset="100%" stop-color="#85929E"/>
+            </linearGradient>
+
+            <linearGradient id="mtGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#6B7B8C"/>
+                <stop offset="100%" stop-color="#95A5A6"/>
+            </linearGradient>
+
+            <linearGradient id="hillGrad1" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#558B2F"/>
+                <stop offset="100%" stop-color="#33691E"/>
+            </linearGradient>
+
+            <linearGradient id="hillGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#689F38"/>
+                <stop offset="100%" stop-color="#558B2F"/>
+            </linearGradient>
+
+            <linearGradient id="hillGrad3" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#7CB342"/>
+                <stop offset="100%" stop-color="#689F38"/>
+            </linearGradient>
+
+            <linearGradient id="fieldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#5D4037"/>
+                <stop offset="30%" stop-color="#4E342E"/>
+                <stop offset="60%" stop-color="#3E2723"/>
+                <stop offset="100%" stop-color="#2D1B14"/>
+            </linearGradient>
+
+            <linearGradient id="moistSoilGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#3E2723"/>
+                <stop offset="40%" stop-color="#2D1B14"/>
+                <stop offset="100%" stop-color="#1A0F0A"/>
+            </linearGradient>
+
+            <linearGradient id="wetSoilGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#4E342E"/>
+                <stop offset="50%" stop-color="#3E2723"/>
+                <stop offset="100%" stop-color="#2D1B14"/>
+            </linearGradient>
+
+            <linearGradient id="canalBankGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#33691E"/>
+                <stop offset="40%" stop-color="#2E5016"/>
+                <stop offset="100%" stop-color="#1B3D0A"/>
+            </linearGradient>
+
+            <linearGradient id="waterGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#29B6F6"/>
+                <stop offset="50%" stop-color="#0288D1"/>
+                <stop offset="100%" stop-color="#01579B"/>
+            </linearGradient>
+
+            <linearGradient id="fallGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#FFFFFF"/>
+                <stop offset="20%" stop-color="#E1F5FE"/>
+                <stop offset="50%" stop-color="#81D4FA"/>
+                <stop offset="80%" stop-color="#4FC3F7"/>
+                <stop offset="100%" stop-color="#29B6F6"/>
+            </linearGradient>
+
+            <linearGradient id="fallSideGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#4FC3F780"/>
+                <stop offset="50%" stop-color="#E1F5FE"/>
+                <stop offset="100%" stop-color="#4FC3F780"/>
+            </linearGradient>
+
+            <radialGradient id="pondGrad" cx="50%" cy="30%" r="70%">
+                <stop offset="0%" stop-color="#4FC3F7"/>
+                <stop offset="40%" stop-color="#29B6F6"/>
+                <stop offset="70%" stop-color="#0288D1"/>
+                <stop offset="100%" stop-color="#01579B"/>
+            </radialGradient>
+
+            <linearGradient id="canalGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#0288D1"/>
+                <stop offset="50%" stop-color="#03A9F4"/>
+                <stop offset="100%" stop-color="#0288D1"/>
+            </linearGradient>
+
+            <linearGradient id="canalSurfaceGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#4FC3F7"/>
+                <stop offset="30%" stop-color="#29B6F6"/>
+                <stop offset="70%" stop-color="#0288D1"/>
+                <stop offset="100%" stop-color="#01579B"/>
+            </linearGradient>
+
+            <linearGradient id="rockGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#5D4037"/>
+                <stop offset="30%" stop-color="#4E342E"/>
+                <stop offset="60%" stop-color="#6D4C41"/>
+                <stop offset="100%" stop-color="#3E2723"/>
+            </linearGradient>
+
+            <linearGradient id="rockGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#6D4C41"/>
+                <stop offset="50%" stop-color="#5D4037"/>
+                <stop offset="100%" stop-color="#4E342E"/>
+            </linearGradient>
+
+            <linearGradient id="mossGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#2E7D32"/>
+                <stop offset="100%" stop-color="#1B5E20"/>
+            </linearGradient>
+
+            <filter id="cloudBlur">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="2"/>
+            </filter>
+
+            <filter id="waterBlur">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="1.5"/>
+            </filter>
+
+            <filter id="mistFilter">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="4"/>
+            </filter>
+
+            <filter id="waterGlow">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="3"/>
+                <feColorMatrix type="matrix" values="1 0 0 0 0.2  0 1 0 0 0.3  0 0 1 0 0.4  0 0 0 1 0"/>
+            </filter>
+
+            <pattern id="soilTexture" patternUnits="userSpaceOnUse" width="60" height="60">
+                <rect width="60" height="60" fill="#3E2723"/>
+                <circle cx="10" cy="15" r="2" fill="#2D1B14" opacity="0.5"/>
+                <circle cx="35" cy="8" r="1.5" fill="#4E342E" opacity="0.4"/>
+                <circle cx="50" cy="25" r="2.5" fill="#2D1B14" opacity="0.5"/>
+                <circle cx="20" cy="40" r="1.8" fill="#4E342E" opacity="0.4"/>
+                <circle cx="45" cy="50" r="2" fill="#2D1B14" opacity="0.5"/>
+                <circle cx="5" cy="55" r="1.5" fill="#4E342E" opacity="0.4"/>
+                <ellipse cx="30" cy="30" rx="4" ry="2" fill="#2D1B14" opacity="0.3"/>
+            </pattern>
+
+            <pattern id="grassPattern" patternUnits="userSpaceOnUse" width="20" height="30">
+                <line x1="5" y1="30" x2="5" y2="15" stroke="#558B2F" stroke-width="2"/>
+                <line x1="10" y1="30" x2="12" y2="12" stroke="#689F38" stroke-width="1.5"/>
+                <line x1="15" y1="30" x2="14" y2="18" stroke="#7CB342" stroke-width="1.5"/>
+            </pattern>
+
+            <linearGradient id="deepWaterGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#0288D1"/>
+                <stop offset="30%" stop-color="#01579B"/>
+                <stop offset="70%" stop-color="#014377"/>
+                <stop offset="100%" stop-color="#012A4A"/>
+            </linearGradient>
+
+            <linearGradient id="waterReflectGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#4FC3F7" stop-opacity="0"/>
+                <stop offset="30%" stop-color="#81D4FA" stop-opacity="0.4"/>
+                <stop offset="50%" stop-color="#B3E5FC" stop-opacity="0.6"/>
+                <stop offset="70%" stop-color="#81D4FA" stop-opacity="0.4"/>
+                <stop offset="100%" stop-color="#4FC3F7" stop-opacity="0"/>
+            </linearGradient>
+        </defs>
+
+        <rect width="100%" height="100%" fill="url(#skyGrad)"/>
+
+        <g class="sun-body" transform="translate(1550, 120)">
+            <circle cx="0" cy="0" r="120" fill="url(#haloGrad)"/>
+            <g class="sun-rays" opacity="0.4">
+                <line x1="0" y1="-90" x2="0" y2="-140" stroke="#FFD54F" stroke-width="3"/>
+                <line x1="64" y1="-64" x2="99" y2="-99" stroke="#FFD54F" stroke-width="3"/>
+                <line x1="90" y1="0" x2="140" y2="0" stroke="#FFD54F" stroke-width="3"/>
+                <line x1="64" y1="64" x2="99" y2="99" stroke="#FFD54F" stroke-width="3"/>
+                <line x1="0" y1="90" x2="0" y2="140" stroke="#FFD54F" stroke-width="3"/>
+                <line x1="-64" y1="64" x2="-99" y2="99" stroke="#FFD54F" stroke-width="3"/>
+                <line x1="-90" y1="0" x2="-140" y2="0" stroke="#FFD54F" stroke-width="3"/>
+                <line x1="-64" y1="-64" x2="-99" y2="-99" stroke="#FFD54F" stroke-width="3"/>
+            </g>
+            <circle cx="0" cy="0" r="55" fill="url(#sunGrad)"/>
+        </g>
+
+        <g class="cloud" style="--speed: 100s" filter="url(#cloudBlur)">
+            <ellipse cx="200" cy="100" rx="80" ry="35" fill="#ffffff" opacity="0.9"/>
+            <ellipse cx="250" cy="90" rx="60" ry="30" fill="#ffffff" opacity="0.85"/>
+            <ellipse cx="280" cy="105" rx="50" ry="25" fill="#ffffff" opacity="0.8"/>
+        </g>
+        <g class="cloud" style="--speed: 130s" filter="url(#cloudBlur)">
+            <ellipse cx="600" cy="140" rx="70" ry="30" fill="#ffffff" opacity="0.85"/>
+            <ellipse cx="660" cy="130" rx="55" ry="25" fill="#ffffff" opacity="0.8"/>
+            <ellipse cx="640" cy="145" rx="45" ry="22" fill="#ffffff" opacity="0.75"/>
+        </g>
+        <g class="cloud" style="--speed: 150s" filter="url(#cloudBlur)">
+            <ellipse cx="1000" cy="80" rx="90" ry="40" fill="#ffffff" opacity="0.9"/>
+            <ellipse cx="1070" cy="70" rx="65" ry="32" fill="#ffffff" opacity="0.85"/>
+            <ellipse cx="1100" cy="88" rx="55" ry="28" fill="#ffffff" opacity="0.8"/>
+        </g>
+
+        <g class="flock" style="--fly: 28s">
+            <g transform="translate(0, 180)">
+                <path class="wings" d="M0,0 Q-8,-6 -15,-2 M0,0 Q8,-6 15,-2" stroke="#2C3E50" stroke-width="2" fill="none"/>
+            </g>
+            <g transform="translate(25, 175)">
+                <path class="wings" style="animation-delay: 0.1s" d="M0,0 Q-7,-5 -12,-2 M0,0 Q7,-5 12,-2" stroke="#2C3E50" stroke-width="1.5" fill="none"/>
+            </g>
+            <g transform="translate(15, 190)">
+                <path class="wings" style="animation-delay: 0.2s" d="M0,0 Q-6,-5 -11,-2 M0,0 Q6,-5 11,-2" stroke="#2C3E50" stroke-width="1.5" fill="none"/>
+            </g>
+        </g>
+        <g class="flock" style="--fly: 35s">
+            <g transform="translate(0, 220)">
+                <path class="wings" d="M0,0 Q-7,-5 -13,-2 M0,0 Q7,-5 13,-2" stroke="#34495E" stroke-width="1.8" fill="none"/>
+            </g>
+            <g transform="translate(20, 215)">
+                <path class="wings" style="animation-delay: 0.15s" d="M0,0 Q-6,-4 -10,-1 M0,0 Q6,-4 10,-1" stroke="#34495E" stroke-width="1.5" fill="none"/>
+            </g>
+        </g>
+        <g class="flock" style="--fly: 42s">
+            <g transform="translate(0, 160)">
+                <path class="wings" d="M0,0 Q-9,-7 -16,-3 M0,0 Q9,-7 16,-3" stroke="#2C3E50" stroke-width="2" fill="none"/>
+            </g>
+            <g transform="translate(30, 155)">
+                <path class="wings" style="animation-delay: 0.08s" d="M0,0 Q-7,-5 -12,-2 M0,0 Q7,-5 12,-2" stroke="#2C3E50" stroke-width="1.5" fill="none"/>
+            </g>
+            <g transform="translate(18, 168)">
+                <path class="wings" style="animation-delay: 0.18s" d="M0,0 Q-5,-4 -9,-1 M0,0 Q5,-4 9,-1" stroke="#2C3E50" stroke-width="1.3" fill="none"/>
+            </g>
+            <g transform="translate(40, 162)">
+                <path class="wings" style="animation-delay: 0.25s" d="M0,0 Q-6,-5 -11,-2 M0,0 Q6,-5 11,-2" stroke="#34495E" stroke-width="1.4" fill="none"/>
+            </g>
+        </g>
+
+        <path d="M0,500 L150,350 L300,420 L450,320 L600,400 L750,300 L900,380 L1050,280 L1200,360 L1350,290 L1500,370 L1650,310 L1800,400 L1920,350 L1920,500 Z" fill="url(#mtGrad1)" opacity="0.6"/>
+        <path d="M0,520 L200,420 L400,480 L600,380 L800,450 L1000,360 L1200,440 L1400,370 L1600,450 L1800,390 L1920,460 L1920,520 Z" fill="url(#mtGrad2)" opacity="0.5"/>
+
+        <ellipse cx="300" cy="620" rx="500" ry="150" fill="url(#hillGrad1)"/>
+        <ellipse cx="900" cy="600" rx="600" ry="170" fill="url(#hillGrad2)"/>
+        <ellipse cx="1500" cy="630" rx="550" ry="160" fill="url(#hillGrad1)"/>
+        <ellipse cx="600" cy="680" rx="700" ry="180" fill="url(#hillGrad3)"/>
+        <ellipse cx="1300" cy="700" rx="650" ry="190" fill="url(#hillGrad2)"/>
+
+        <g transform="translate(280, 520)">
+            <ellipse cx="30" cy="230" rx="90" ry="25" fill="#1B5E20" opacity="0.3"/>
+            
+            <path d="M0,230 L-8,180 L-12,120 L-8,60 L0,0" stroke="#5D4037" stroke-width="28" fill="none" stroke-linecap="round"/>
+            <path d="M0,230 L-8,180 L-12,120 L-8,60 L0,0" stroke="#6D4C41" stroke-width="22" fill="none" stroke-linecap="round"/>
+            <path d="M0,230 L-8,180 L-12,120 L-8,60 L0,0" stroke="#795548" stroke-width="16" fill="none" stroke-linecap="round"/>
+            
+            <path d="M-15,200 L-10,180" stroke="#4E342E" stroke-width="2" opacity="0.6"/>
+            <path d="M5,190 L8,160" stroke="#4E342E" stroke-width="2" opacity="0.5"/>
+            <path d="M-18,150 L-12,130" stroke="#4E342E" stroke-width="2" opacity="0.6"/>
+            <path d="M10,140 L12,110" stroke="#4E342E" stroke-width="2" opacity="0.5"/>
+            <path d="M-16,100 L-10,80" stroke="#4E342E" stroke-width="2" opacity="0.6"/>
+            
+            <path d="M-8,60 Q-40,30 -80,40" stroke="#6D4C41" stroke-width="12" fill="none" stroke-linecap="round"/>
+            <path d="M-8,60 Q30,20 70,35" stroke="#6D4C41" stroke-width="10" fill="none" stroke-linecap="round"/>
+            <path d="M-12,100 Q-60,70 -100,90" stroke="#795548" stroke-width="8" fill="none" stroke-linecap="round"/>
+            <path d="M-10,80 Q50,50 90,70" stroke="#795548" stroke-width="8" fill="none" stroke-linecap="round"/>
+            
+            <ellipse cx="0" cy="-20" rx="130" ry="90" fill="#2E7D32"/>
+            <ellipse cx="-50" cy="10" rx="90" ry="70" fill="#388E3C"/>
+            <ellipse cx="50" cy="5" rx="85" ry="65" fill="#388E3C"/>
+            <ellipse cx="-80" cy="40" rx="60" ry="50" fill="#43A047"/>
+            <ellipse cx="80" cy="35" rx="55" ry="45" fill="#43A047"/>
+            <ellipse cx="0" cy="-50" rx="100" ry="60" fill="#2E7D32"/>
+            
+            <ellipse cx="-30" cy="-30" rx="70" ry="50" fill="#4CAF50"/>
+            <ellipse cx="40" cy="-25" rx="65" ry="45" fill="#4CAF50"/>
+            <ellipse cx="-70" cy="20" rx="50" ry="40" fill="#66BB6A"/>
+            <ellipse cx="70" cy="15" rx="45" ry="35" fill="#66BB6A"/>
+            
+            <ellipse cx="-20" cy="-60" rx="45" ry="30" fill="#81C784"/>
+            <ellipse cx="30" cy="-55" rx="40" ry="28" fill="#81C784"/>
+            <ellipse cx="0" cy="-80" rx="50" ry="25" fill="#A5D6A7" opacity="0.7"/>
+            
+            <ellipse cx="-60" cy="50" rx="12" ry="16" fill="#FFC107"/>
+            <ellipse cx="-60" cy="50" rx="10" ry="14" fill="#FFD54F"/>
+            <ellipse cx="-58" cy="46" rx="4" ry="5" fill="#FFECB3" opacity="0.6"/>
+            
+            <ellipse cx="-30" cy="65" rx="11" ry="15" fill="#FF9800"/>
+            <ellipse cx="-30" cy="65" rx="9" ry="13" fill="#FFB74D"/>
+            <ellipse cx="-28" cy="61" rx="3" ry="4" fill="#FFE0B2" opacity="0.6"/>
+            
+            <ellipse cx="40" cy="55" rx="13" ry="17" fill="#FFC107"/>
+            <ellipse cx="40" cy="55" rx="11" ry="15" fill="#FFD54F"/>
+            <ellipse cx="42" cy="51" rx="4" ry="5" fill="#FFECB3" opacity="0.6"/>
+            
+            <ellipse cx="70" cy="40" rx="10" ry="14" fill="#8BC34A"/>
+            <ellipse cx="70" cy="40" rx="8" ry="12" fill="#9CCC65"/>
+            
+            <ellipse cx="-85" cy="30" rx="11" ry="15" fill="#FFC107"/>
+            <ellipse cx="-85" cy="30" rx="9" ry="13" fill="#FFD54F"/>
+            
+            <ellipse cx="5" cy="75" rx="12" ry="16" fill="#FF9800"/>
+            <ellipse cx="5" cy="75" rx="10" ry="14" fill="#FFCC80"/>
+            <ellipse cx="7" cy="71" rx="4" ry="5" fill="#FFE0B2" opacity="0.6"/>
+        </g>
+
+        <g transform="translate(1620, 530)">
+            <ellipse cx="20" cy="220" rx="85" ry="22" fill="#1B5E20" opacity="0.3"/>
+            
+            <path d="M0,220 L5,170 L8,110 L5,50 L0,0" stroke="#5D4037" stroke-width="24" fill="none" stroke-linecap="round"/>
+            <path d="M0,220 L5,170 L8,110 L5,50 L0,0" stroke="#6D4C41" stroke-width="18" fill="none" stroke-linecap="round"/>
+            <path d="M0,220 L5,170 L8,110 L5,50 L0,0" stroke="#8D6E63" stroke-width="12" fill="none" stroke-linecap="round"/>
+            
+            <path d="M-10,200 L-6,175" stroke="#4E342E" stroke-width="2" opacity="0.6"/>
+            <path d="M12,185 L14,155" stroke="#4E342E" stroke-width="2" opacity="0.5"/>
+            <path d="M-12,140 L-8,115" stroke="#4E342E" stroke-width="2" opacity="0.6"/>
+            <path d="M14,125 L16,95" stroke="#4E342E" stroke-width="2" opacity="0.5"/>
+            
+            <path d="M5,50 Q-35,20 -70,30" stroke="#6D4C41" stroke-width="10" fill="none" stroke-linecap="round"/>
+            <path d="M5,50 Q45,15 80,25" stroke="#6D4C41" stroke-width="9" fill="none" stroke-linecap="round"/>
+            <path d="M8,90 Q-50,60 -85,80" stroke="#795548" stroke-width="7" fill="none" stroke-linecap="round"/>
+            <path d="M6,75 Q55,45 95,60" stroke="#795548" stroke-width="7" fill="none" stroke-linecap="round"/>
+            
+            <circle cx="0" cy="-30" r="100" fill="#2E7D32"/>
+            <circle cx="-45" cy="0" r="70" fill="#388E3C"/>
+            <circle cx="45" cy="-5" r="65" fill="#388E3C"/>
+            <circle cx="-70" cy="30" r="50" fill="#43A047"/>
+            <circle cx="70" cy="25" r="48" fill="#43A047"/>
+            <circle cx="0" cy="-70" r="65" fill="#2E7D32"/>
+            
+            <circle cx="-25" cy="-40" r="55" fill="#4CAF50"/>
+            <circle cx="30" cy="-35" r="50" fill="#4CAF50"/>
+            <circle cx="-55" cy="10" r="40" fill="#66BB6A"/>
+            <circle cx="55" cy="5" r="38" fill="#66BB6A"/>
+            
+            <circle cx="-15" cy="-75" r="35" fill="#81C784"/>
+            <circle cx="20" cy="-70" r="32" fill="#81C784"/>
+            <circle cx="0" cy="-95" r="30" fill="#A5D6A7" opacity="0.7"/>
+            
+            <circle cx="-55" cy="45" r="11" fill="#C62828"/>
+            <circle cx="-55" cy="45" r="9" fill="#E53935"/>
+            <ellipse cx="-53" cy="42" rx="3" ry="2.5" fill="#FFCDD2" opacity="0.5"/>
+            <line x1="-55" y1="34" x2="-54" y2="30" stroke="#5D4037" stroke-width="2"/>
+            
+            <circle cx="-25" cy="60" r="10" fill="#D32F2F"/>
+            <circle cx="-25" cy="60" r="8" fill="#EF5350"/>
+            <ellipse cx="-23" cy="57" rx="2.5" ry="2" fill="#FFCDD2" opacity="0.5"/>
+            <line x1="-25" y1="50" x2="-24" y2="46" stroke="#5D4037" stroke-width="2"/>
+            
+            <circle cx="35" cy="50" r="12" fill="#C62828"/>
+            <circle cx="35" cy="50" r="10" fill="#E53935"/>
+            <ellipse cx="37" cy="46" rx="3" ry="2.5" fill="#FFCDD2" opacity="0.5"/>
+            <line x1="35" y1="38" x2="36" y2="34" stroke="#5D4037" stroke-width="2"/>
+            
+            <circle cx="65" cy="35" r="10" fill="#F44336"/>
+            <circle cx="65" cy="35" r="8" fill="#EF5350"/>
+            <ellipse cx="67" cy="32" rx="2.5" ry="2" fill="#FFCDD2" opacity="0.5"/>
+            <line x1="65" y1="25" x2="66" y2="21" stroke="#5D4037" stroke-width="2"/>
+            
+            <circle cx="-75" cy="25" r="9" fill="#4CAF50"/>
+            <circle cx="-75" cy="25" r="7" fill="#66BB6A"/>
+            <line x1="-75" y1="16" x2="-74" y2="12" stroke="#5D4037" stroke-width="2"/>
+            
+            <circle cx="5" cy="70" r="11" fill="#D32F2F"/>
+            <circle cx="5" cy="70" r="9" fill="#E53935"/>
+            <ellipse cx="7" cy="67" rx="3" ry="2.5" fill="#FFCDD2" opacity="0.5"/>
+            <line x1="5" y1="59" x2="6" y2="55" stroke="#5D4037" stroke-width="2"/>
+            
+            <circle cx="80" cy="55" r="10" fill="#C62828"/>
+            <circle cx="80" cy="55" r="8" fill="#EF5350"/>
+            <ellipse cx="82" cy="52" rx="2.5" ry="2" fill="#FFCDD2" opacity="0.5"/>
+            <line x1="80" y1="45" x2="81" y2="41" stroke="#5D4037" stroke-width="2"/>
+        </g>
+
+        <rect x="0" y="750" width="1920" height="400" fill="url(#fieldGrad)"/>
+        <rect x="0" y="750" width="1920" height="400" fill="url(#soilTexture)" opacity="0.4"/>
+        
+        <path d="M0,820 Q200,815 400,825 Q700,835 960,830 Q1200,825 1500,835 Q1700,828 1920,830 L1920,880 Q1700,875 1500,885 Q1200,878 960,880 Q700,888 400,875 Q200,868 0,870 Z" fill="url(#moistSoilGrad)" opacity="0.7"/>
+        
+        <path d="M200,835 Q400,832 600,838 Q800,840 960,835" stroke="#5D4037" stroke-width="1" fill="none" opacity="0.3"/>
+        <path d="M960,835 Q1150,840 1400,833 Q1600,838 1800,835" stroke="#5D4037" stroke-width="1" fill="none" opacity="0.3"/>
+        
+        <g opacity="0.5">
+            <ellipse cx="100" cy="780" rx="15" ry="8" fill="#2D1B14"/>
+            <ellipse cx="350" cy="795" rx="12" ry="6" fill="#3E2723"/>
+            <ellipse cx="600" cy="775" rx="18" ry="9" fill="#2D1B14"/>
+            <ellipse cx="850" cy="790" rx="14" ry="7" fill="#3E2723"/>
+            <ellipse cx="1100" cy="778" rx="16" ry="8" fill="#2D1B14"/>
+            <ellipse cx="1400" cy="792" rx="13" ry="6" fill="#3E2723"/>
+            <ellipse cx="1700" cy="785" rx="17" ry="8" fill="#2D1B14"/>
+        </g>
+
+        <g transform="translate(0, 0)">
+            <path d="M0,800 Q200,795 400,802 Q600,808 800,805 Q1000,802 1200,798 Q1400,805 1600,800 Q1800,803 1920,800 L1920,815 Q1800,818 1600,813 Q1400,817 1200,820 Q1000,817 800,815 Q600,818 400,810 Q200,815 0,815 Z" fill="url(#canalBankGrad)"/>
+            <path d="M0,865 Q200,870 400,863 Q600,857 800,860 Q1000,863 1200,867 Q1400,860 1600,865 Q1800,862 1920,865 L1920,850 Q1800,847 1600,852 Q1400,848 1200,845 Q1000,848 800,850 Q600,848 400,855 Q200,850 0,850 Z" fill="url(#canalBankGrad)"/>
+            
+            <path d="M0,815 Q200,810 400,817 Q600,823 800,820 Q1000,817 1200,813 Q1400,820 1600,815 Q1800,818 1920,815 L1920,820 Q1800,823 1600,818 Q1400,822 1200,825 Q1000,822 800,823 Q600,822 400,818 Q200,820 0,820 Z" fill="#78909C"/>
+            <path d="M0,850 Q200,855 400,848 Q600,842 800,845 Q1000,848 1200,852 Q1400,845 1600,850 Q1800,847 1920,850 L1920,845 Q1800,842 1600,847 Q1400,843 1200,840 Q1000,843 800,842 Q600,843 400,847 Q200,845 0,845 Z" fill="#78909C"/>
+            
+            <path d="M0,820 Q200,815 400,822 Q600,828 800,825 Q1000,822 1200,818 Q1400,825 1600,820 Q1800,823 1920,820 L1920,845 Q1800,842 1600,847 Q1400,843 1200,840 Q1000,843 800,842 Q600,843 400,847 Q200,845 0,845 Z" fill="url(#deepWaterGrad)"/>
+            
+            <path d="M0,822 Q200,817 400,824 Q600,830 800,827 Q1000,824 1200,820 Q1400,827 1600,822 Q1800,825 1920,822 L1920,838 Q1800,835 1600,840 Q1400,836 1200,833 Q1000,836 800,835 Q600,836 400,840 Q200,838 0,838 Z" fill="url(#canalSurfaceGrad)" opacity="0.9"/>
+            
+            <path d="M0,828 Q200,823 400,830 Q600,835 800,832" fill="none" stroke="url(#waterReflectGrad)" stroke-width="8" opacity="0.5"/>
+            <path d="M800,832 Q1000,828 1200,832 Q1400,828 1600,833" fill="none" stroke="url(#waterReflectGrad)" stroke-width="8" opacity="0.5"/>
+            <path d="M1600,833 Q1750,828 1920,830" fill="none" stroke="url(#waterReflectGrad)" stroke-width="8" opacity="0.5"/>
+            
+            <g class="canal-ripple">
+                <path d="M30,830 Q100,828 170,832" stroke="#81D4FA" stroke-width="2" fill="none" opacity="0.6"/>
+                <path d="M250,828 Q350,832 450,827" stroke="#B3E5FC" stroke-width="1.5" fill="none" opacity="0.5"/>
+                <path d="M550,833 Q650,828 750,834" stroke="#81D4FA" stroke-width="2" fill="none" opacity="0.6"/>
+                <path d="M850,827 Q950,833 1050,828" stroke="#B3E5FC" stroke-width="1.5" fill="none" opacity="0.5"/>
+                <path d="M1150,832 Q1250,827 1350,833" stroke="#81D4FA" stroke-width="2" fill="none" opacity="0.6"/>
+                <path d="M1450,828 Q1550,834 1650,829" stroke="#B3E5FC" stroke-width="1.5" fill="none" opacity="0.5"/>
+                <path d="M1750,832 Q1820,828 1890,831" stroke="#81D4FA" stroke-width="2" fill="none" opacity="0.6"/>
+            </g>
+            
+            <g class="canal-shimmer">
+                <ellipse cx="80" cy="832" rx="35" ry="5" fill="#E1F5FE" opacity="0.35"/>
+                <ellipse cx="300" cy="830" rx="40" ry="6" fill="#E1F5FE" opacity="0.3"/>
+                <ellipse cx="550" cy="834" rx="35" ry="5" fill="#E1F5FE" opacity="0.35"/>
+                <ellipse cx="800" cy="829" rx="45" ry="6" fill="#E1F5FE" opacity="0.3"/>
+                <ellipse cx="1050" cy="833" rx="38" ry="5" fill="#E1F5FE" opacity="0.35"/>
+                <ellipse cx="1300" cy="830" rx="42" ry="6" fill="#E1F5FE" opacity="0.3"/>
+                <ellipse cx="1550" cy="832" rx="35" ry="5" fill="#E1F5FE" opacity="0.35"/>
+                <ellipse cx="1800" cy="830" rx="40" ry="6" fill="#E1F5FE" opacity="0.3"/>
+            </g>
+            
+            <g class="water-flow">
+                <circle cx="100" cy="833" r="3" fill="#E1F5FE" opacity="0.5"/>
+                <circle cx="300" cy="830" r="2.5" fill="#E1F5FE" opacity="0.4"/>
+                <circle cx="500" cy="832" r="3" fill="#B3E5FC" opacity="0.5"/>
+                <circle cx="700" cy="831" r="2" fill="#E1F5FE" opacity="0.4"/>
+                <circle cx="900" cy="833" r="2.5" fill="#E1F5FE" opacity="0.5"/>
+                <circle cx="1100" cy="830" r="3" fill="#B3E5FC" opacity="0.4"/>
+                <circle cx="1300" cy="832" r="2.5" fill="#E1F5FE" opacity="0.5"/>
+                <circle cx="1500" cy="831" r="2" fill="#E1F5FE" opacity="0.4"/>
+                <circle cx="1700" cy="833" r="3" fill="#B3E5FC" opacity="0.5"/>
+            </g>
+            
+            <g class="flow-debris" style="animation-delay: 0s;">
+                <ellipse cx="200" cy="832" rx="4" ry="2" fill="#8BC34A" opacity="0.6"/>
+            </g>
+            <g class="flow-debris" style="animation-delay: 4s;">
+                <ellipse cx="600" cy="830" rx="3" ry="1.5" fill="#689F38" opacity="0.5"/>
+            </g>
+            <g class="flow-debris" style="animation-delay: 8s;">
+                <ellipse cx="1000" cy="833" rx="3.5" ry="2" fill="#7CB342" opacity="0.6"/>
+            </g>
+            
+            <g class="water-flow-fast">
+                <path d="M50,831 Q150,829 250,832" stroke="#B3E5FC" stroke-width="1" fill="none" opacity="0.4"/>
+                <path d="M350,830 Q450,833 550,829" stroke="#81D4FA" stroke-width="1" fill="none" opacity="0.3"/>
+                <path d="M650,832 Q750,829 850,833" stroke="#B3E5FC" stroke-width="1" fill="none" opacity="0.4"/>
+                <path d="M950,830 Q1050,833 1150,829" stroke="#81D4FA" stroke-width="1" fill="none" opacity="0.3"/>
+                <path d="M1250,832 Q1350,829 1450,833" stroke="#B3E5FC" stroke-width="1" fill="none" opacity="0.4"/>
+                <path d="M1550,830 Q1650,833 1750,829" stroke="#81D4FA" stroke-width="1" fill="none" opacity="0.3"/>
+                <path d="M1800,832 Q1860,829 1920,831" stroke="#B3E5FC" stroke-width="1" fill="none" opacity="0.4"/>
+            </g>
+        </g>
+
+        <rect x="0" y="868" width="1920" height="220" fill="#1A1A1A"/>
+        
+        <rect x="0" y="868" width="1920" height="220" fill="#0D0D0D" opacity="0.8"/>
+        <rect x="0" y="875" width="1920" height="200" fill="#1C1410" opacity="0.9"/>
+        
+        <path d="M0,890 Q200,885 400,892 Q600,888 800,893 Q1000,887 1200,891 Q1400,886 1600,890 Q1800,888 1920,890" fill="none" stroke="#2D2420" stroke-width="3" opacity="0.6"/>
+        <path d="M0,920 Q300,915 600,922 Q900,918 1200,923 Q1500,917 1800,921 L1920,920" fill="none" stroke="#251A15" stroke-width="2" opacity="0.5"/>
+        <path d="M0,950 Q250,945 500,952 Q750,948 1000,953 Q1250,947 1500,951 Q1750,949 1920,950" fill="none" stroke="#2D2420" stroke-width="2.5" opacity="0.5"/>
+        
+        <ellipse cx="80" cy="900" rx="25" ry="8" fill="#1A1410" opacity="0.7"/>
+        <ellipse cx="250" cy="935" rx="30" ry="10" fill="#0D0A08" opacity="0.6"/>
+        <ellipse cx="450" cy="915" rx="22" ry="7" fill="#1A1410" opacity="0.7"/>
+        <ellipse cx="650" cy="945" rx="28" ry="9" fill="#0D0A08" opacity="0.6"/>
+        <ellipse cx="850" cy="905" rx="24" ry="8" fill="#1A1410" opacity="0.7"/>
+        <ellipse cx="1050" cy="940" rx="26" ry="8" fill="#0D0A08" opacity="0.6"/>
+        <ellipse cx="1250" cy="910" rx="23" ry="7" fill="#1A1410" opacity="0.7"/>
+        <ellipse cx="1450" cy="938" rx="29" ry="9" fill="#0D0A08" opacity="0.6"/>
+        <ellipse cx="1650" cy="908" rx="25" ry="8" fill="#1A1410" opacity="0.7"/>
+        <ellipse cx="1850" cy="942" rx="27" ry="8" fill="#0D0A08" opacity="0.6"/>
+        
+        <rect x="0" y="880" width="1920" height="130" fill="#4FC3F7" opacity="0.12"/>
+        <rect x="0" y="890" width="1920" height="100" fill="#81D4FA" opacity="0.08"/>
+        
+        <path d="M0,920 L200,918 L400,922 L600,919 L800,921 L1000,918 L1200,920 L1400,918 L1600,921 L1800,919 L1920,920" 
+              stroke="#B3E5FC" stroke-width="1.5" fill="none" opacity="0.2"/>
+        <path d="M0,945 L150,943 L300,947 L450,944 L600,946 L750,943 L900,945 L1050,943 L1200,946 L1350,944 L1500,946 L1650,943 L1800,945 L1920,944" 
+              stroke="#81D4FA" stroke-width="1" fill="none" opacity="0.15"/>
+
+        <rect x="0" y="868" width="1920" height="8" fill="#3E2723"/>
+        <rect x="0" y="1000" width="1920" height="88" fill="#1A1410"/>
+        <rect x="0" y="1000" width="1920" height="10" fill="#2D1B14"/>
+        
+        <rect x="478" y="868" width="4" height="142" fill="#2D1B14" opacity="0.6"/>
+        <rect x="958" y="868" width="4" height="142" fill="#2D1B14" opacity="0.6"/>
+        <rect x="1438" y="868" width="4" height="142" fill="#2D1B14" opacity="0.6"/>
+
+        <defs>
+            <g id="ricePlant1">
+                <line x1="0" y1="0" x2="0" y2="-45" stroke="#6B8E23" stroke-width="2.5"/>
+                <path d="M0,-15 Q-8,-22 -15,-20" stroke="#7CB342" stroke-width="2" fill="none"/>
+                <path d="M0,-25 Q8,-32 14,-28" stroke="#8BC34A" stroke-width="1.8" fill="none"/>
+                <path d="M0,-35 Q-6,-42 -10,-38" stroke="#9ACD32" stroke-width="1.5" fill="none"/>
+                <g transform="translate(0,-45)">
+                    <path d="M0,0 Q6,8 8,20" stroke="#BDB76B" stroke-width="1.5" fill="none"/>
+                    <ellipse cx="8" cy="20" rx="3" ry="4" fill="#DAA520"/>
+                    <ellipse cx="6" cy="14" rx="2.5" ry="3" fill="#D4A017"/>
+                    <ellipse cx="7" cy="8" rx="2" ry="2.5" fill="#DAA520"/>
+                </g>
+            </g>
+            <g id="ricePlant2">
+                <line x1="0" y1="0" x2="0" y2="-50" stroke="#6B8E23" stroke-width="2.5"/>
+                <path d="M0,-12 Q-10,-20 -18,-16" stroke="#7CB342" stroke-width="2" fill="none"/>
+                <path d="M0,-28 Q10,-36 16,-30" stroke="#8BC34A" stroke-width="1.8" fill="none"/>
+                <path d="M0,-40 Q-8,-48 -12,-42" stroke="#9ACD32" stroke-width="1.5" fill="none"/>
+                <g transform="translate(0,-50)">
+                    <path d="M0,0 Q8,10 10,25" stroke="#BDB76B" stroke-width="1.5" fill="none"/>
+                    <ellipse cx="10" cy="25" rx="3" ry="4" fill="#DAA520"/>
+                    <ellipse cx="8" cy="18" rx="2.5" ry="3" fill="#D4A017"/>
+                    <ellipse cx="9" cy="11" rx="2" ry="2.5" fill="#DAA520"/>
+                    <ellipse cx="7" cy="5" rx="1.8" ry="2" fill="#D4A017"/>
+                </g>
+            </g>
+            <g id="ricePlant3">
+                <line x1="0" y1="0" x2="0" y2="-42" stroke="#6B8E23" stroke-width="2.5"/>
+                <path d="M0,-14 Q-7,-20 -12,-17" stroke="#7CB342" stroke-width="2" fill="none"/>
+                <path d="M0,-26 Q7,-32 12,-27" stroke="#8BC34A" stroke-width="1.8" fill="none"/>
+                <g transform="translate(0,-42)">
+                    <path d="M0,0 Q5,6 7,16" stroke="#BDB76B" stroke-width="1.5" fill="none"/>
+                    <ellipse cx="7" cy="16" rx="2.5" ry="3.5" fill="#DAA520"/>
+                    <ellipse cx="5" cy="10" rx="2" ry="2.5" fill="#D4A017"/>
+                </g>
+            </g>
+        </defs>
+
+        <use href="#ricePlant1" transform="translate(40, 980)"/>
+        <use href="#ricePlant2" transform="translate(70, 982)"/>
+        <use href="#ricePlant3" transform="translate(100, 979)"/>
+        <use href="#ricePlant1" transform="translate(130, 981)"/>
+        <use href="#ricePlant2" transform="translate(160, 980)"/>
+        <use href="#ricePlant3" transform="translate(190, 982)"/>
+        <use href="#ricePlant1" transform="translate(220, 979)"/>
+        <use href="#ricePlant2" transform="translate(250, 981)"/>
+        <use href="#ricePlant3" transform="translate(280, 980)"/>
+        <use href="#ricePlant1" transform="translate(310, 982)"/>
+        <use href="#ricePlant2" transform="translate(340, 979)"/>
+        <use href="#ricePlant3" transform="translate(370, 981)"/>
+        <use href="#ricePlant1" transform="translate(400, 980)"/>
+        <use href="#ricePlant2" transform="translate(430, 982)"/>
+        <use href="#ricePlant3" transform="translate(460, 979)"/>
+        
+        <use href="#ricePlant1" transform="translate(500, 981)"/>
+        <use href="#ricePlant2" transform="translate(530, 980)"/>
+        <use href="#ricePlant3" transform="translate(560, 982)"/>
+        <use href="#ricePlant1" transform="translate(590, 979)"/>
+        <use href="#ricePlant2" transform="translate(620, 981)"/>
+        <use href="#ricePlant3" transform="translate(650, 980)"/>
+        <use href="#ricePlant1" transform="translate(680, 982)"/>
+        <use href="#ricePlant2" transform="translate(710, 979)"/>
+        <use href="#ricePlant3" transform="translate(740, 981)"/>
+        <use href="#ricePlant1" transform="translate(770, 980)"/>
+        <use href="#ricePlant2" transform="translate(800, 982)"/>
+        <use href="#ricePlant3" transform="translate(830, 979)"/>
+        <use href="#ricePlant1" transform="translate(860, 981)"/>
+        <use href="#ricePlant2" transform="translate(890, 980)"/>
+        <use href="#ricePlant3" transform="translate(920, 982)"/>
+        
+        <use href="#ricePlant1" transform="translate(980, 980)"/>
+        <use href="#ricePlant2" transform="translate(1010, 982)"/>
+        <use href="#ricePlant3" transform="translate(1040, 979)"/>
+        <use href="#ricePlant1" transform="translate(1070, 981)"/>
+        <use href="#ricePlant2" transform="translate(1100, 980)"/>
+        <use href="#ricePlant3" transform="translate(1130, 982)"/>
+        <use href="#ricePlant1" transform="translate(1160, 979)"/>
+        <use href="#ricePlant2" transform="translate(1190, 981)"/>
+        <use href="#ricePlant3" transform="translate(1220, 980)"/>
+        <use href="#ricePlant1" transform="translate(1250, 982)"/>
+        <use href="#ricePlant2" transform="translate(1280, 979)"/>
+        <use href="#ricePlant3" transform="translate(1310, 981)"/>
+        <use href="#ricePlant1" transform="translate(1340, 980)"/>
+        <use href="#ricePlant2" transform="translate(1370, 982)"/>
+        <use href="#ricePlant3" transform="translate(1400, 979)"/>
+        
+        <use href="#ricePlant1" transform="translate(1460, 981)"/>
+        <use href="#ricePlant2" transform="translate(1490, 980)"/>
+        <use href="#ricePlant3" transform="translate(1520, 982)"/>
+        <use href="#ricePlant1" transform="translate(1550, 979)"/>
+        <use href="#ricePlant2" transform="translate(1580, 981)"/>
+        <use href="#ricePlant3" transform="translate(1610, 980)"/>
+        <use href="#ricePlant1" transform="translate(1640, 982)"/>
+        <use href="#ricePlant2" transform="translate(1670, 979)"/>
+        <use href="#ricePlant3" transform="translate(1700, 981)"/>
+        <use href="#ricePlant1" transform="translate(1730, 980)"/>
+        <use href="#ricePlant2" transform="translate(1760, 982)"/>
+        <use href="#ricePlant3" transform="translate(1790, 979)"/>
+        <use href="#ricePlant1" transform="translate(1820, 981)"/>
+        <use href="#ricePlant2" transform="translate(1850, 980)"/>
+        <use href="#ricePlant3" transform="translate(1880, 982)"/>
+
+        <use href="#ricePlant2" transform="translate(55, 955)"/>
+        <use href="#ricePlant1" transform="translate(85, 957)"/>
+        <use href="#ricePlant3" transform="translate(115, 954)"/>
+        <use href="#ricePlant2" transform="translate(145, 956)"/>
+        <use href="#ricePlant1" transform="translate(175, 955)"/>
+        <use href="#ricePlant3" transform="translate(205, 957)"/>
+        <use href="#ricePlant2" transform="translate(235, 954)"/>
+        <use href="#ricePlant1" transform="translate(265, 956)"/>
+        <use href="#ricePlant3" transform="translate(295, 955)"/>
+        <use href="#ricePlant2" transform="translate(325, 957)"/>
+        <use href="#ricePlant1" transform="translate(355, 954)"/>
+        <use href="#ricePlant3" transform="translate(385, 956)"/>
+        <use href="#ricePlant2" transform="translate(415, 955)"/>
+        <use href="#ricePlant1" transform="translate(445, 957)"/>
+        
+        <use href="#ricePlant3" transform="translate(515, 954)"/>
+        <use href="#ricePlant2" transform="translate(545, 956)"/>
+        <use href="#ricePlant1" transform="translate(575, 955)"/>
+        <use href="#ricePlant3" transform="translate(605, 957)"/>
+        <use href="#ricePlant2" transform="translate(635, 954)"/>
+        <use href="#ricePlant1" transform="translate(665, 956)"/>
+        <use href="#ricePlant3" transform="translate(695, 955)"/>
+        <use href="#ricePlant2" transform="translate(725, 957)"/>
+        <use href="#ricePlant1" transform="translate(755, 954)"/>
+        <use href="#ricePlant3" transform="translate(785, 956)"/>
+        <use href="#ricePlant2" transform="translate(815, 955)"/>
+        <use href="#ricePlant1" transform="translate(845, 957)"/>
+        <use href="#ricePlant3" transform="translate(875, 954)"/>
+        <use href="#ricePlant2" transform="translate(905, 956)"/>
+        <use href="#ricePlant1" transform="translate(935, 955)"/>
+        
+        <use href="#ricePlant3" transform="translate(995, 957)"/>
+        <use href="#ricePlant2" transform="translate(1025, 954)"/>
+        <use href="#ricePlant1" transform="translate(1055, 956)"/>
+        <use href="#ricePlant3" transform="translate(1085, 955)"/>
+        <use href="#ricePlant2" transform="translate(1115, 957)"/>
+        <use href="#ricePlant1" transform="translate(1145, 954)"/>
+        <use href="#ricePlant3" transform="translate(1175, 956)"/>
+        <use href="#ricePlant2" transform="translate(1205, 955)"/>
+        <use href="#ricePlant1" transform="translate(1235, 957)"/>
+        <use href="#ricePlant3" transform="translate(1265, 954)"/>
+        <use href="#ricePlant2" transform="translate(1295, 956)"/>
+        <use href="#ricePlant1" transform="translate(1325, 955)"/>
+        <use href="#ricePlant3" transform="translate(1355, 957)"/>
+        <use href="#ricePlant2" transform="translate(1385, 954)"/>
+        <use href="#ricePlant1" transform="translate(1415, 956)"/>
+        
+        <use href="#ricePlant3" transform="translate(1475, 955)"/>
+        <use href="#ricePlant2" transform="translate(1505, 957)"/>
+        <use href="#ricePlant1" transform="translate(1535, 954)"/>
+        <use href="#ricePlant3" transform="translate(1565, 956)"/>
+        <use href="#ricePlant2" transform="translate(1595, 955)"/>
+        <use href="#ricePlant1" transform="translate(1625, 957)"/>
+        <use href="#ricePlant3" transform="translate(1655, 954)"/>
+        <use href="#ricePlant2" transform="translate(1685, 956)"/>
+        <use href="#ricePlant1" transform="translate(1715, 955)"/>
+        <use href="#ricePlant3" transform="translate(1745, 957)"/>
+        <use href="#ricePlant2" transform="translate(1775, 954)"/>
+        <use href="#ricePlant1" transform="translate(1805, 956)"/>
+        <use href="#ricePlant3" transform="translate(1835, 955)"/>
+        <use href="#ricePlant2" transform="translate(1865, 957)"/>
+
+        <use href="#ricePlant3" transform="translate(48, 930)"/>
+        <use href="#ricePlant1" transform="translate(78, 932)"/>
+        <use href="#ricePlant2" transform="translate(108, 929)"/>
+        <use href="#ricePlant3" transform="translate(138, 931)"/>
+        <use href="#ricePlant1" transform="translate(168, 930)"/>
+        <use href="#ricePlant2" transform="translate(198, 932)"/>
+        <use href="#ricePlant3" transform="translate(228, 929)"/>
+        <use href="#ricePlant1" transform="translate(258, 931)"/>
+        <use href="#ricePlant2" transform="translate(288, 930)"/>
+        <use href="#ricePlant3" transform="translate(318, 932)"/>
+        <use href="#ricePlant1" transform="translate(348, 929)"/>
+        <use href="#ricePlant2" transform="translate(378, 931)"/>
+        <use href="#ricePlant3" transform="translate(408, 930)"/>
+        <use href="#ricePlant1" transform="translate(438, 932)"/>
+        <use href="#ricePlant2" transform="translate(468, 929)"/>
+        
+        <use href="#ricePlant3" transform="translate(508, 931)"/>
+        <use href="#ricePlant1" transform="translate(538, 930)"/>
+        <use href="#ricePlant2" transform="translate(568, 932)"/>
+        <use href="#ricePlant3" transform="translate(598, 929)"/>
+        <use href="#ricePlant1" transform="translate(628, 931)"/>
+        <use href="#ricePlant2" transform="translate(658, 930)"/>
+        <use href="#ricePlant3" transform="translate(688, 932)"/>
+        <use href="#ricePlant1" transform="translate(718, 929)"/>
+        <use href="#ricePlant2" transform="translate(748, 931)"/>
+        <use href="#ricePlant3" transform="translate(778, 930)"/>
+        <use href="#ricePlant1" transform="translate(808, 932)"/>
+        <use href="#ricePlant2" transform="translate(838, 929)"/>
+        <use href="#ricePlant3" transform="translate(868, 931)"/>
+        <use href="#ricePlant1" transform="translate(898, 930)"/>
+        <use href="#ricePlant2" transform="translate(928, 932)"/>
+        
+        <use href="#ricePlant3" transform="translate(988, 929)"/>
+        <use href="#ricePlant1" transform="translate(1018, 931)"/>
+        <use href="#ricePlant2" transform="translate(1048, 930)"/>
+        <use href="#ricePlant3" transform="translate(1078, 932)"/>
+        <use href="#ricePlant1" transform="translate(1108, 929)"/>
+        <use href="#ricePlant2" transform="translate(1138, 931)"/>
+        <use href="#ricePlant3" transform="translate(1168, 930)"/>
+        <use href="#ricePlant1" transform="translate(1198, 932)"/>
+        <use href="#ricePlant2" transform="translate(1228, 929)"/>
+        <use href="#ricePlant3" transform="translate(1258, 931)"/>
+        <use href="#ricePlant1" transform="translate(1288, 930)"/>
+        <use href="#ricePlant2" transform="translate(1318, 932)"/>
+        <use href="#ricePlant3" transform="translate(1348, 929)"/>
+        <use href="#ricePlant1" transform="translate(1378, 931)"/>
+        <use href="#ricePlant2" transform="translate(1408, 930)"/>
+        
+        <use href="#ricePlant3" transform="translate(1468, 932)"/>
+        <use href="#ricePlant1" transform="translate(1498, 929)"/>
+        <use href="#ricePlant2" transform="translate(1528, 931)"/>
+        <use href="#ricePlant3" transform="translate(1558, 930)"/>
+        <use href="#ricePlant1" transform="translate(1588, 932)"/>
+        <use href="#ricePlant2" transform="translate(1618, 929)"/>
+        <use href="#ricePlant3" transform="translate(1648, 931)"/>
+        <use href="#ricePlant1" transform="translate(1678, 930)"/>
+        <use href="#ricePlant2" transform="translate(1708, 932)"/>
+        <use href="#ricePlant3" transform="translate(1738, 929)"/>
+        <use href="#ricePlant1" transform="translate(1768, 931)"/>
+        <use href="#ricePlant2" transform="translate(1798, 930)"/>
+        <use href="#ricePlant3" transform="translate(1828, 932)"/>
+        <use href="#ricePlant1" transform="translate(1858, 929)"/>
+        <use href="#ricePlant2" transform="translate(1888, 931)"/>
+
+        <use href="#ricePlant1" transform="translate(62, 905)"/>
+        <use href="#ricePlant3" transform="translate(92, 907)"/>
+        <use href="#ricePlant2" transform="translate(122, 904)"/>
+        <use href="#ricePlant1" transform="translate(152, 906)"/>
+        <use href="#ricePlant3" transform="translate(182, 905)"/>
+        <use href="#ricePlant2" transform="translate(212, 907)"/>
+        <use href="#ricePlant1" transform="translate(242, 904)"/>
+        <use href="#ricePlant3" transform="translate(272, 906)"/>
+        <use href="#ricePlant2" transform="translate(302, 905)"/>
+        <use href="#ricePlant1" transform="translate(332, 907)"/>
+        <use href="#ricePlant3" transform="translate(362, 904)"/>
+        <use href="#ricePlant2" transform="translate(392, 906)"/>
+        <use href="#ricePlant1" transform="translate(422, 905)"/>
+        <use href="#ricePlant3" transform="translate(452, 907)"/>
+        
+        <use href="#ricePlant2" transform="translate(522, 904)"/>
+        <use href="#ricePlant1" transform="translate(552, 906)"/>
+        <use href="#ricePlant3" transform="translate(582, 905)"/>
+        <use href="#ricePlant2" transform="translate(612, 907)"/>
+        <use href="#ricePlant1" transform="translate(642, 904)"/>
+        <use href="#ricePlant3" transform="translate(672, 906)"/>
+        <use href="#ricePlant2" transform="translate(702, 905)"/>
+        <use href="#ricePlant1" transform="translate(732, 907)"/>
+        <use href="#ricePlant3" transform="translate(762, 904)"/>
+        <use href="#ricePlant2" transform="translate(792, 906)"/>
+        <use href="#ricePlant1" transform="translate(822, 905)"/>
+        <use href="#ricePlant3" transform="translate(852, 907)"/>
+        <use href="#ricePlant2" transform="translate(882, 904)"/>
+        <use href="#ricePlant1" transform="translate(912, 906)"/>
+        <use href="#ricePlant3" transform="translate(942, 905)"/>
+        
+        <use href="#ricePlant2" transform="translate(1002, 907)"/>
+        <use href="#ricePlant1" transform="translate(1032, 904)"/>
+        <use href="#ricePlant3" transform="translate(1062, 906)"/>
+        <use href="#ricePlant2" transform="translate(1092, 905)"/>
+        <use href="#ricePlant1" transform="translate(1122, 907)"/>
+        <use href="#ricePlant3" transform="translate(1152, 904)"/>
+        <use href="#ricePlant2" transform="translate(1182, 906)"/>
+        <use href="#ricePlant1" transform="translate(1212, 905)"/>
+        <use href="#ricePlant3" transform="translate(1242, 907)"/>
+        <use href="#ricePlant2" transform="translate(1272, 904)"/>
+        <use href="#ricePlant1" transform="translate(1302, 906)"/>
+        <use href="#ricePlant3" transform="translate(1332, 905)"/>
+        <use href="#ricePlant2" transform="translate(1362, 907)"/>
+        <use href="#ricePlant1" transform="translate(1392, 904)"/>
+        <use href="#ricePlant3" transform="translate(1422, 906)"/>
+        
+        <use href="#ricePlant2" transform="translate(1482, 905)"/>
+        <use href="#ricePlant1" transform="translate(1512, 907)"/>
+        <use href="#ricePlant3" transform="translate(1542, 904)"/>
+        <use href="#ricePlant2" transform="translate(1572, 906)"/>
+        <use href="#ricePlant1" transform="translate(1602, 905)"/>
+        <use href="#ricePlant3" transform="translate(1632, 907)"/>
+        <use href="#ricePlant2" transform="translate(1662, 904)"/>
+        <use href="#ricePlant1" transform="translate(1692, 906)"/>
+        <use href="#ricePlant3" transform="translate(1722, 905)"/>
+        <use href="#ricePlant2" transform="translate(1752, 907)"/>
+        <use href="#ricePlant1" transform="translate(1782, 904)"/>
+        <use href="#ricePlant3" transform="translate(1812, 906)"/>
+        <use href="#ricePlant2" transform="translate(1842, 905)"/>
+        <use href="#ricePlant1" transform="translate(1872, 907)"/>
+
+    </svg>
+</div>
+
+<div class="container">
+    <h2>🌾 Crop Yield Prediction</h2>
+    <form id="predictionForm" class="form-grid">
+        <div class="form-group">
+            <label>Region</label>
+            <select name="Region" required>
+                <option value="">Select Region</option>
+                <option value="North">North</option>
+                <option value="South">South</option>
+                <option value="East">East</option>
+                <option value="West">West</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Soil Type</label>
+            <select name="Soil_Type" required>
+                <option value="">Select Soil Type</option>
+                <option value="Loam">Loam</option>
+                <option value="Sandy">Sandy</option>
+                <option value="Clay">Clay</option>
+                <option value="Chalky">Chalky</option>
+                <option value="Peaty">Peaty</option>
+                <option value="Silt">Silt</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Crop</label>
+            <select name="Crop" required>
+                <option value="">Select Crop</option>
+                <option value="Wheat">Wheat</option>
+                <option value="Rice">Rice</option>
+                <option value="Maize">Maize</option>
+                <option value="Barley">Barley</option>
+                <option value="Cotton">Cotton</option>
+                <option value="Soybean">Soybean</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Rainfall (mm)</label>
+            <input type="number" name="Rainfall_mm" placeholder="e.g., 200" step="any" required>
+        </div>
+
+        <div class="form-group">
+            <label>Temperature (°C)</label>
+            <input type="number" name="Temperature_Celsius" placeholder="e.g., 25" step="any" required>
+        </div>
+
+        <div class="form-group">
+            <label>Fertilizer Used</label>
+            <select name="Fertilizer_Used" required>
+                <option value="">Select Option</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Irrigation Used</label>
+            <select name="Irrigation_Used" required>
+                <option value="">Select Option</option>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Weather Condition</label>
+            <select name="Weather_Condition" required>
+                <option value="">Select Weather</option>
+                <option value="Sunny">Sunny</option>
+                <option value="Rainy">Rainy</option>
+                <option value="Cloudy">Cloudy</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Days to Harvest</label>
+            <input type="number" name="Days_to_Harvest" placeholder="e.g., 120" required>
+        </div>
+
+        <button type="submit" class="btn">🌱 Predict Yield</button>
+    </form>
+
+    <div id="result" class="result" style="display: none;">
+        <h3>Predicted Yield</h3>
+        <p id="yieldValue"></p>
+    </div>
+    
+    <div id="errorBox" class="error-message" style="display: none;">
+        <h3>Error</h3>
+        <p id="errorValue"></p>
+    </div>
+</div>
+
+<script>
+    document.getElementById("predictionForm").addEventListener("submit", function(event) {
+        event.preventDefault();
+
+        const formData = new FormData(event.target);
+        const jsonData = {};
+
+        // === THIS IS THE OLD CODE LOGIC FOR PROCESSING DATA ===
+        // This ensures numbers are sent as numbers (int/float) to the backend
+        // instead of strings, exactly as your old code did.
+        for (const [key, value] of formData.entries()) {
+            if (!isNaN(value) && value.trim() !== "") {
+                jsonData[key] = value.includes('.') ? parseFloat(value) : parseInt(value);
+            } else {
+                jsonData[key] = value.trim();
+            }
+        }
+
+        fetch("http://localhost:5000/predict", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(jsonData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            const resultDiv = document.getElementById("result");
+            const yieldValue = document.getElementById("yieldValue");
+            const errorBox = document.getElementById("errorBox");
+            const errorValue = document.getElementById("errorValue");
+
+            // Reset displays
+            resultDiv.style.display = "none";
+            errorBox.style.display = "none";
+
+            if (data.predicted_crop_yield !== undefined) {
+                // Success - Show result in the nice UI
+                yieldValue.textContent = data.predicted_crop_yield.toFixed(2) + ' tons/hectare';
+                resultDiv.style.display = "block";
+            } else if (data.error) {
+                // Error - Show error in UI
+                errorValue.textContent = data.error;
+                errorBox.style.display = "block";
+            } else {
+                // Unexpected Error
+                errorValue.textContent = "Unexpected error: " + JSON.stringify(data);
+                errorBox.style.display = "block";
+            }
+        })
+        .catch(error => {
+            const errorBox = document.getElementById("errorBox");
+            const errorValue = document.getElementById("errorValue");
+            document.getElementById("result").style.display = "none";
+            
+            errorValue.textContent = "Fetch Error: " + error;
+            errorBox.style.display = "block";
+            console.error("Error:", error);
+        });
+    });
+</script>
+
+</body>
+</html>

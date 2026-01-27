@@ -195,6 +195,98 @@
                 display: block;
             }
         }
+
+        /* --- CHATBOT STYLES --- */
+        .chatbot-toggler {
+            position: fixed;
+            bottom: 30px;
+            right: 35px;
+            outline: none;
+            border: none;
+            height: 60px;
+            width: 60px;
+            display: flex;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: #2E7D32; 
+            box-shadow: 0 0 20px rgba(46, 125, 50, 0.4);
+            transition: all 0.3s ease;
+            z-index: 9999;
+        }
+        .chatbot-toggler:hover { transform: scale(1.1) rotate(10deg); background: #00E676; }
+        .chatbot-toggler span { color: #fff; position: absolute; font-size: 28px; }
+
+        .chatbot {
+            position: fixed;
+            right: 35px;
+            bottom: 100px;
+            width: 400px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            overflow: hidden;
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(0.5);
+            transform-origin: bottom right;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            z-index: 9998;
+            border: 1px solid rgba(46, 125, 50, 0.2);
+        }
+        body.show-chatbot .chatbot { opacity: 1; pointer-events: auto; transform: scale(1); }
+
+        .chatbot header {
+            padding: 16px 0;
+            position: relative;
+            text-align: center;
+            color: #fff;
+            background: linear-gradient(135deg, #1b5e20, #2e7d32);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .chatbot header h2 { font-size: 1.4rem; font-weight: 600; margin: 0; }
+        .chatbot header span { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 24px; display: none; }
+
+        .chatbox {
+            overflow-y: auto;
+            height: 350px;
+            padding: 20px 20px 70px;
+            background: #f0f2f5;
+            font-size: 0.95rem;
+        }
+        .chatbox::-webkit-scrollbar { width: 6px; }
+        .chatbox::-webkit-scrollbar-track { background: transparent; }
+        .chatbox::-webkit-scrollbar-thumb { background: #ccc; border-radius: 20px; }
+
+        .chatbox .chat { display: flex; list-style: none; margin-bottom: 15px; }
+        .chatbox .incoming span {
+            width: 32px; height: 32px; color: #fff; background: #2E7D32;
+            text-align: center; line-height: 32px; border-radius: 50%;
+            margin: 0 10px 7px 0; align-self: flex-end;
+        }
+        .chatbox .chat p {
+            white-space: pre-wrap; padding: 10px 14px; border-radius: 10px 10px 10px 0;
+            max-width: 75%; color: #fff; background: #2E7D32; font-size: 0.95rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .chatbox .incoming p { border-radius: 10px 10px 0 10px; color: #000; background: #fff; border: 1px solid #ddd; }
+
+        .chat-input {
+            position: absolute; bottom: 0; width: 100%; display: flex; gap: 5px;
+            background: #fff; padding: 10px 20px; border-top: 1px solid #ddd;
+        }
+        .chat-input textarea {
+            height: 45px; width: 100%; border: none; outline: none; resize: none;
+            max-height: 180px; padding: 12px 0; font-size: 0.95rem;
+            font-family: 'Poppins', sans-serif;
+        }
+        .chat-input span {
+            align-self: flex-end; color: #2E7D32; cursor: pointer; height: 45px;
+            display: flex; align-items: center; font-size: 24px; transition: 0.3s;
+        }
+        .chat-input span:hover { color: #00E676; }
     </style>
 </head>
 <body>
@@ -216,23 +308,18 @@
             <li class="nav-item active" onclick="loadModule('home', this)">
                 <i class="fas fa-home"></i> Dashboard
             </li>
-            
             <li class="nav-item" onclick="loadModule('Farmer_Crop_Registration.html', this)">
                 <i class="fas fa-user-plus"></i> Farmer Registration
             </li>
-
             <li class="nav-item" onclick="loadModule('Crop_Yield_Prediction.html', this)">
                 <i class="fas fa-seedling"></i> Yield Prediction
             </li>
-
             <li class="nav-item" onclick="loadModule('Fertilizer_Recommendation.html', this)">
                 <i class="fas fa-flask"></i> Fertilizer Recommender
             </li>
-
             <li class="nav-item" onclick="loadModule('Crop_Disease_Prediction.html', this)">
                 <i class="fas fa-virus"></i> Disease Detection
             </li>
-
             <li class="nav-item" onclick="loadModule('Find_Crop.html', this)">
                 <i class="fas fa-handshake"></i> Crop Matching
             </li>
@@ -249,8 +336,28 @@
                 </button>
             </div>
         </div>
-
         <iframe id="app-frame" src="" style="display: none;"></iframe>
+    </div>
+
+    <button class="chatbot-toggler" onclick="toggleChat()">
+        <span class="fas fa-robot"></span>
+    </button>
+
+    <div class="chatbot">
+        <header>
+            <h2>🌿 AgroBot AI</h2>
+            <span class="fas fa-times" onclick="toggleChat()"></span>
+        </header>
+        <ul class="chatbox" id="chatbox">
+            <li class="chat incoming">
+                <span class="fas fa-robot"></span>
+                <p>Hello! I'm AgroBot. Ask me about your crops!</p>
+            </li>
+        </ul>
+        <div class="chat-input">
+            <textarea placeholder="Type a message..." spellcheck="false" required></textarea>
+            <span id="send-btn" class="fas fa-paper-plane"></span>
+        </div>
     </div>
 
     <script>
@@ -258,11 +365,9 @@
             const iframe = document.getElementById('app-frame');
             const welcomeScreen = document.getElementById('welcome-screen');
             
-            // Handle Active State
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
             if(element) element.classList.add('active');
 
-            // Handle Mobile Menu Close
             if(window.innerWidth <= 900) {
                 document.getElementById('sidebar').classList.remove('open');
             }
@@ -281,6 +386,78 @@
         function toggleMenu() {
             document.getElementById('sidebar').classList.toggle('open');
         }
+
+        // Chatbot Logic
+        const chatInput = document.querySelector(".chat-input textarea");
+        const sendChatBtn = document.querySelector(".chat-input span");
+        const chatbox = document.querySelector(".chatbox");
+        const chatbotToggler = document.querySelector(".chatbot-toggler");
+
+        let userMessage = null;
+        const inputInitHeight = chatInput.scrollHeight;
+
+        const toggleChat = () => {
+            document.body.classList.toggle("show-chatbot");
+            chatbotToggler.innerHTML = document.body.classList.contains("show-chatbot") 
+                ? '<span class="fas fa-times"></span>' 
+                : '<span class="fas fa-robot"></span>';
+        }
+
+        const createChatLi = (message, className) => {
+            const chatLi = document.createElement("li");
+            chatLi.classList.add("chat", className);
+            let chatContent = className === "outgoing" ? `<p></p>` : `<span class="fas fa-robot"></span><p></p>`;
+            chatLi.innerHTML = chatContent;
+            chatLi.querySelector("p").textContent = message;
+            return chatLi;
+        }
+
+        const generateResponse = async (chatElement) => {
+            const messageElement = chatElement.querySelector("p");
+            try {
+                // Fetch call to Flask Backend
+                const response = await fetch("http://127.0.0.1:5000/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message: userMessage })
+                });
+                const data = await response.json();
+                messageElement.textContent = data.reply || "Server error.";
+            } catch (error) {
+                messageElement.textContent = "Oops! Connection error.";
+            }
+            chatbox.scrollTo(0, chatbox.scrollHeight);
+        }
+
+        const handleChat = () => {
+            userMessage = chatInput.value.trim();
+            if(!userMessage) return;
+            chatInput.value = "";
+            chatInput.style.height = `${inputInitHeight}px`;
+            chatbox.appendChild(createChatLi(userMessage, "outgoing"));
+            chatbox.scrollTo(0, chatbox.scrollHeight);
+            
+            setTimeout(() => {
+                const incomingChatLi = createChatLi("Thinking...", "incoming");
+                chatbox.appendChild(incomingChatLi);
+                chatbox.scrollTo(0, chatbox.scrollHeight);
+                generateResponse(incomingChatLi);
+            }, 600);
+        }
+
+        chatInput.addEventListener("input", () => {
+            chatInput.style.height = `${inputInitHeight}px`;
+            chatInput.style.height = `${chatInput.scrollHeight}px`;
+        });
+
+        chatInput.addEventListener("keydown", (e) => {
+            if(e.key === "Enter" && !e.shiftKey && window.innerWidth > 800) {
+                e.preventDefault();
+                handleChat();
+            }
+        });
+
+        sendChatBtn.addEventListener("click", handleChat);
     </script>
 
 </body>

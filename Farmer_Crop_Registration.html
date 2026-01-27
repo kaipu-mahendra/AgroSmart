@@ -238,7 +238,7 @@
         <input type="text" id="name" required>
 
         <label for="contact">Contact Number</label>
-        <input type="text" id="contact" required>
+        <input type="text" id="contact" placeholder="e.g. 9876543210" required>
 
         <label for="location">Location</label>
         <input type="text" id="location" required>
@@ -288,17 +288,28 @@
   </div>
 
   <script>
-    // --- Logic from Old Code Integrated Here ---
-
-    // 1. Register Farmer
+    // --- 1. Register Farmer (With Validation) ---
     document.getElementById('farmerForm').addEventListener('submit', function(e) {
       e.preventDefault();
       
-      const data = {
-        name: document.getElementById('name').value,
-        contact: document.getElementById('contact').value,
-        location: document.getElementById('location').value
-      };
+      const name = document.getElementById('name').value;
+      const contact = document.getElementById('contact').value;
+      const location = document.getElementById('location').value;
+      const resultDiv = document.getElementById("farmerResult");
+
+      // --- PHONE VALIDATION LOGIC ---
+      // Pattern: Starts with 6-9, followed by exactly 9 digits (0-9)
+      const phonePattern = /^[6-9]\d{9}$/;
+
+      if (!phonePattern.test(contact)) {
+        resultDiv.textContent = "Error: Phone number must start with 6, 7, 8, or 9 and be 10 digits.";
+        resultDiv.style.color = "#e74c3c"; // Red
+        resultDiv.style.background = "rgba(231, 76, 60, 0.1)";
+        return; // Stop execution if invalid
+      }
+      // ------------------------------
+
+      const data = { name, contact, location };
 
       fetch("http://127.0.0.1:5000/register-farmer", {
         method: "POST",
@@ -307,26 +318,26 @@
       })
       .then(res => res.json())
       .then(res => {
-        const resultDiv = document.getElementById("farmerResult");
         if (res.farmer_id) {
           resultDiv.textContent = `Registered successfully! Farmer ID: ${res.farmer_id}`;
-          resultDiv.style.color = "#27ae60"; // Green for success
+          resultDiv.style.color = "#27ae60"; // Green
           resultDiv.style.background = "rgba(39, 174, 96, 0.1)";
+          // Optional: Clear form
+          document.getElementById('farmerForm').reset();
         } else {
           resultDiv.textContent = `Error: ${res.error}`;
-          resultDiv.style.color = "#e74c3c"; // Red for error
+          resultDiv.style.color = "#e74c3c"; 
           resultDiv.style.background = "rgba(231, 76, 60, 0.1)";
         }
       })
       .catch(() => {
-        const resultDiv = document.getElementById("farmerResult");
         resultDiv.textContent = "Server Error - Check connection";
         resultDiv.style.color = "#e74c3c";
         resultDiv.style.background = "rgba(231, 76, 60, 0.1)";
       });
     });
 
-    // 2. Submit Crop
+    // --- 2. Submit Crop ---
     document.getElementById('cropForm').addEventListener('submit', function(e) {
       e.preventDefault();
       
@@ -347,11 +358,11 @@
       .then(res => {
         const resultDiv = document.getElementById("cropResult");
         
-        // Old code logic: checks if message exists for success
         if (res.message) {
             resultDiv.textContent = res.message;
             resultDiv.style.color = "#27ae60";
             resultDiv.style.background = "rgba(39, 174, 96, 0.1)";
+            document.getElementById('cropForm').reset();
         } else {
             resultDiv.textContent = `Error: ${res.error}`;
             resultDiv.style.color = "#e74c3c";
@@ -366,5 +377,6 @@
       });
     });
   </script>
+
 </body>
 </html>

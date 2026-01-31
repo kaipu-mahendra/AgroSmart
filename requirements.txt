@@ -1,6 +1,6 @@
 flask
 flask-cors
-google-generativeai
+google-generativeai>=0.7.0
 scikit-fuzzy
 pandas
 pillow

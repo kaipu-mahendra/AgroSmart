@@ -110,17 +110,31 @@ except:
 interpreter = None
 input_details = None
 output_details = None
-class_names = []
+
+# --- HARDCODED CLASS NAMES (FIXES "Class 7" ERROR) ---
+# These are the standard 38 classes. If your model has different classes, update this list!
+class_names = [
+    'Apple___Apple_scab', 'Apple___Black_rot', 'Apple___Cedar_apple_rust', 'Apple___healthy',
+    'Blueberry___healthy', 'Cherry_(including_sour)___Powdery_mildew', 'Cherry_(including_sour)___healthy',
+    'Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot', 'Corn_(maize)___Common_rust_',
+    'Corn_(maize)___Northern_Leaf_Blight', 'Corn_(maize)___healthy', 'Grape___Black_rot',
+    'Grape___Esca_(Black_Measles)', 'Grape___Leaf_blight_(Isariopsis_Leaf_Spot)', 'Grape___healthy',
+    'Orange___Haunglongbing_(Citrus_greening)', 'Peach___Bacterial_spot', 'Peach___healthy',
+    'Pepper,_bell___Bacterial_spot', 'Pepper,_bell___healthy', 'Potato___Early_blight',
+    'Potato___Late_blight', 'Potato___healthy', 'Raspberry___healthy', 'Soybean___healthy',
+    'Squash___Powdery_mildew', 'Strawberry___Leaf_scorch', 'Strawberry___healthy',
+    'Tomato___Bacterial_spot', 'Tomato___Early_blight', 'Tomato___Late_blight', 'Tomato___Leaf_Mold',
+    'Tomato___Septoria_leaf_spot', 'Tomato___Spider_mites Two-spotted_spider_mite',
+    'Tomato___Target_Spot', 'Tomato___Tomato_Yellow_Leaf_Curl_Virus', 'Tomato___Tomato_mosaic_virus',
+    'Tomato___healthy'
+]
+
 try:
     if os.path.exists("plant_disease.tflite"):
         interpreter = tf.lite.Interpreter(model_path="plant_disease.tflite")
         interpreter.allocate_tensors()
         input_details = interpreter.get_input_details()
         output_details = interpreter.get_output_details()
-        if os.path.exists("PlantVillage/train"):
-            class_names = sorted(os.listdir("PlantVillage/train"))
-        else:
-            class_names = ["Disease_1", "Disease_2", "Healthy"]
         print("✅ TFLite Model Loaded")
     else:
         print("❌ TFLite model file not found.")
@@ -142,20 +156,16 @@ def chat():
     except Exception as e:
         return jsonify({"reply": f"Error: {str(e)}"})
 
-# --- 1. FARMER REGISTRATION ---
 @app.route("/register-farmer", methods=["POST"])
 @app.route("/register_farmer", methods=["POST"])
 def register_farmer():
     try:
         data = request.json
         print("📥 Registering Farmer:", data)
-        
         name = data.get('name')
         contact = data.get('contact')
         location = data.get('location')
-        
-        if not name or not contact:
-             return jsonify({"error": "Name and Contact are required"}), 400
+        if not name or not contact: return jsonify({"error": "Name and Contact are required"}), 400
 
         conn = sqlite3.connect(DB_NAME)
         cursor = conn.cursor()
@@ -163,88 +173,54 @@ def register_farmer():
         farmer_id = cursor.lastrowid
         conn.commit()
         conn.close()
-        
         return jsonify({"message": "Farmer registered successfully!", "farmer_id": farmer_id})
     except Exception as e:
-        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
-# --- 2. CROP SUBMISSION ---
 @app.route("/submit-crop", methods=["POST"])
 def submit_crop():
     try:
         data = request.json
         print("📥 Submitting Crop:", data)
-        
         farmer_id = data.get('farmer_id')
         crop_name = data.get('crop_name')
-        quantity = data.get('quantity')
-        price = data.get('expected_price')
-        season = data.get('season')
-
-        if not farmer_id or not crop_name:
-            return jsonify({"error": "Farmer ID and Crop Name are required"}), 400
+        if not farmer_id or not crop_name: return jsonify({"error": "Required fields missing"}), 400
 
         conn = sqlite3.connect(DB_NAME)
         cursor = conn.cursor()
         cursor.execute("INSERT INTO crops (farmer_id, crop_name, quantity, expected_price, season) VALUES (?, ?, ?, ?, ?)",
-                       (farmer_id, crop_name, quantity, price, season))
+                       (farmer_id, crop_name, data.get('quantity'), data.get('expected_price'), data.get('season')))
         conn.commit()
         conn.close()
-
         return jsonify({"message": "Crop submitted successfully!"})
     except Exception as e:
-        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
-# --- 3. CROP MATCHING (FIXED for preferred_crop and hyphen) ---
 @app.route("/find_matches", methods=["POST"])
-@app.route("/match_crops", methods=["POST"])  # Handles Python style
-@app.route("/match-crops", methods=["POST"])  # Handles HTML style (HYPHEN FIXED)
+@app.route("/match_crops", methods=["POST"])
+@app.route("/match-crops", methods=["POST"])
 def find_matches():
     try:
         data = request.json
-        # FIXED: Look for 'preferred_crop' which is what your HTML sends
         crop_name = (data.get('preferred_crop') or data.get('crop') or data.get('crop_name') or '').strip().lower()
         location_filter = (data.get('location') or data.get('city') or '').strip().lower()
 
-        print(f"🔍 Searching for crop: {crop_name} in {location_filter}")
-
         conn = sqlite3.connect(DB_NAME)
         cursor = conn.cursor()
-        
-        # Search query
-        query = '''
-            SELECT f.name, f.contact, f.location, c.crop_name, c.quantity, c.expected_price, c.id 
-            FROM farmers f
-            JOIN crops c ON f.id = c.farmer_id
-            WHERE LOWER(c.crop_name) LIKE ? 
-        '''
+        query = '''SELECT f.name, f.contact, f.location, c.crop_name, c.quantity, c.expected_price, c.id 
+                   FROM farmers f JOIN crops c ON f.id = c.farmer_id WHERE LOWER(c.crop_name) LIKE ?'''
         params = [f'%{crop_name}%']
-        
         if location_filter:
             query += " AND LOWER(f.location) LIKE ?"
             params.append(f'%{location_filter}%')
-            
+        
         cursor.execute(query, params)
         rows = cursor.fetchall()
         conn.close()
-
-        results = []
-        for row in rows:
-            results.append({
-                "farmer_name": row[0],
-                "contact": row[1],
-                "location": row[2],
-                "crop_name": row[3],
-                "quantity": row[4],
-                "expected_price": row[5],
-                "crop_id": row[6]
-            })
-            
-        return jsonify(results) # Return list directly as frontend expects
+        
+        results = [{"farmer_name": r[0], "contact": r[1], "location": r[2], "crop_name": r[3], "quantity": r[4], "expected_price": r[5], "crop_id": r[6]} for r in rows]
+        return jsonify(results)
     except Exception as e:
-        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 @app.route("/predict", methods=["POST"])
@@ -252,15 +228,6 @@ def predict():
     try:
         if model is None: return jsonify({"error": "Model not loaded"}), 500
         data = request.get_json()
-        raw_data = data.copy()
-        
-        for key, value in data.items():
-            if isinstance(value, str):
-                val = value.strip().lower()
-                if val == "yes": data[key] = 1
-                elif val == "no": data[key] = 0
-                else: data[key] = val.title()
-
         features = [data[col] if col not in label_encoders else label_encoders[col].transform([data[col]])[0] for col in model.feature_names_in_]
         prediction = round(float(model.predict([features])[0]), 2)
         return jsonify({"predicted_crop_yield": prediction})
@@ -301,7 +268,14 @@ def predict_disease():
         preds = interpreter.get_tensor(output_details[0]['index'])[0]
 
         confidence_val = float(np.max(preds) * 100)
-        predicted_class = class_names[np.argmax(preds)] if len(class_names) > np.argmax(preds) else f"Class {np.argmax(preds)}"
+        
+        # --- FIX: Use Hardcoded Class Names ---
+        if len(class_names) > np.argmax(preds):
+            predicted_class = class_names[np.argmax(preds)]
+            # Clean up the name (remove underscores)
+            predicted_class = predicted_class.replace("___", " - ").replace("_", " ")
+        else:
+            predicted_class = f"Class {np.argmax(preds)}"
 
         severity_system.input['confidence'] = confidence_val
         severity_system.input['temperature'] = 28

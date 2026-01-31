@@ -142,8 +142,8 @@ def chat():
     except Exception as e:
         return jsonify({"reply": f"Error: {str(e)}"})
 
-# --- 1. FARMER REGISTRATION (Matches your HTML /register-farmer) ---
-@app.route("/register-farmer", methods=["POST"])  # Hyphenated route to match HTML
+# --- 1. FARMER REGISTRATION ---
+@app.route("/register-farmer", methods=["POST"])
 @app.route("/register_farmer", methods=["POST"])
 def register_farmer():
     try:
@@ -169,7 +169,7 @@ def register_farmer():
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
-# --- 2. CROP SUBMISSION (Matches your HTML /submit-crop) ---
+# --- 2. CROP SUBMISSION ---
 @app.route("/submit-crop", methods=["POST"])
 def submit_crop():
     try:
@@ -197,20 +197,25 @@ def submit_crop():
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
-# --- 3. CROP MATCHING (Matches Find_Crop.html /find_matches) ---
+# --- 3. CROP MATCHING (FIXED for preferred_crop and hyphen) ---
 @app.route("/find_matches", methods=["POST"])
-@app.route("/match_crops", methods=["POST"])
+@app.route("/match_crops", methods=["POST"])  # Handles Python style
+@app.route("/match-crops", methods=["POST"])  # Handles HTML style (HYPHEN FIXED)
 def find_matches():
     try:
         data = request.json
-        crop_name = (data.get('crop') or data.get('crop_name') or '').strip().lower()
+        # FIXED: Look for 'preferred_crop' which is what your HTML sends
+        crop_name = (data.get('preferred_crop') or data.get('crop') or data.get('crop_name') or '').strip().lower()
         location_filter = (data.get('location') or data.get('city') or '').strip().lower()
+
+        print(f"🔍 Searching for crop: {crop_name} in {location_filter}")
 
         conn = sqlite3.connect(DB_NAME)
         cursor = conn.cursor()
         
+        # Search query
         query = '''
-            SELECT f.name, f.contact, f.location, c.crop_name, c.quantity, c.expected_price 
+            SELECT f.name, f.contact, f.location, c.crop_name, c.quantity, c.expected_price, c.id 
             FROM farmers f
             JOIN crops c ON f.id = c.farmer_id
             WHERE LOWER(c.crop_name) LIKE ? 
@@ -231,13 +236,15 @@ def find_matches():
                 "farmer_name": row[0],
                 "contact": row[1],
                 "location": row[2],
-                "crop": row[3],
+                "crop_name": row[3],
                 "quantity": row[4],
-                "price": row[5]
+                "expected_price": row[5],
+                "crop_id": row[6]
             })
             
-        return jsonify({"matches": results})
+        return jsonify(results) # Return list directly as frontend expects
     except Exception as e:
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 @app.route("/predict", methods=["POST"])

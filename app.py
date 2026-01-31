@@ -19,13 +19,12 @@ warnings.filterwarnings("ignore")
 os.environ["GRPC_VERBOSITY"] = "ERROR"
 os.environ["GLOG_minloglevel"] = "2"
 
-# GET ABSOLUTE PATHS (Fixes 'Frontend not found' on Render)
+# ABSOLUTE PATHS (Fixes frontend not found)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads')
 DB_PATH = os.path.join(BASE_DIR, 'agro.db')
 
 app = Flask(__name__)
-# Allow CORS for all domains
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -35,7 +34,6 @@ if not os.path.exists(UPLOAD_FOLDER):
 # --- 2. DATABASE SETUP ---
 def init_db():
     try:
-        # Use absolute path for DB
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute('''CREATE TABLE IF NOT EXISTS farmers (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, contact TEXT, location TEXT)''')
@@ -48,46 +46,39 @@ def init_db():
 
 init_db()
 
-# --- 3. CHATBOT SETUP ---
+# --- 3. CHATBOT SETUP (Smart Auto-Detect) ---
 chat_model = None
 def configure_chatbot():
     global chat_model
     try:
-        # Use your specific API key if needed
-        api_key = os.environ.get("GOOGLE_API_KEY", "AIzaSyDWravHPJcdoI8ijiz2L-sArfwdjupFHJg") 
+        api_key = os.environ.get("GOOGLE_API_KEY", "AIzaSyCCT-8Txzfpk4M0wilgT1sHx8KZh1CLKDc") 
         genai.configure(api_key=api_key)
         
-        # Try Flash first, fallback to Pro
-        try:
-            model = genai.GenerativeModel("gemini-1.5-flash")
-            model.generate_content("Test")
-            chat_model = model
-            print("✅ Chatbot ready: gemini-1.5-flash")
-        except:
-            print("⚠️ Flash failed, trying Pro...")
+        # Try Flash first, then Pro
+        models_to_try = ["gemini-1.5-flash", "gemini-pro"]
+        
+        for model_name in models_to_try:
             try:
-                model = genai.GenerativeModel("gemini-pro")
+                print(f"🔄 Connecting to {model_name}...")
+                model = genai.GenerativeModel(model_name)
+                model.generate_content("Hi")
                 chat_model = model
-                print("✅ Chatbot ready: gemini-pro")
+                print(f"✅ Chatbot ready: {model_name}")
+                return
             except:
-                print("❌ Chatbot failed to load.")
+                continue
+        print("❌ Chatbot failed to load models.")
 
     except Exception as e:
         print(f"❌ Chatbot Setup Error: {e}")
 
 configure_chatbot()
 
-# --- 4. LOAD MODELS (ABSOLUTE PATHS) ---
+# --- 4. LOAD MODELS ---
 try:
-    model_path = os.path.join(BASE_DIR, "crop_model.pkl")
-    encoder_path = os.path.join(BASE_DIR, "label_encoders.pkl")
-    
-    if os.path.exists(model_path):
-        model = pickle.load(open(model_path, "rb"))
-        label_encoders = pickle.load(open(encoder_path, "rb"))
-    else:
-        model = None
-        label_encoders = {}
+    # Load using absolute paths
+    model = pickle.load(open(os.path.join(BASE_DIR, "crop_model.pkl"), "rb"))
+    label_encoders = pickle.load(open(os.path.join(BASE_DIR, "label_encoders.pkl"), "rb"))
 except:
     model = None
     label_encoders = {}
@@ -120,10 +111,8 @@ try:
         input_details = interpreter.get_input_details()
         output_details = interpreter.get_output_details()
         print("✅ TFLite Model Loaded")
-    else:
-        print("❌ TFLite model not found at", tflite_path)
 except Exception as e:
-    print(f"❌ Error loading TFLite model: {e}")
+    print(f"❌ Error loading TFLite: {e}")
 
 # --- 5. ROUTES ---
 
@@ -135,11 +124,56 @@ def chat():
         if chat_model:
             response = chat_model.generate_content(f"You are AgroBot. Answer concisely: {user_message}")
             return jsonify({"reply": response.text})
-        return jsonify({"reply": "Chatbot is unavailable (Model Error)."})
+        return jsonify({"reply": "Chatbot is temporarily unavailable."})
     except Exception as e:
         return jsonify({"reply": f"Error: {str(e)}"})
 
-# --- REGISTRATION ---
+# --- YIELD PREDICTION (FIXED TYPE ERROR) ---
+@app.route("/predict", methods=["POST"])
+def predict():
+    try:
+        if model is None: return jsonify({"error": "Model not loaded"}), 500
+        data = request.get_json()
+        
+        # Pre-process inputs (Fixing 'Yes/No' and casing)
+        processed_data = {}
+        for key, value in data.items():
+            if isinstance(value, str):
+                val = value.strip().lower()
+                if val == "yes": processed_data[key] = 1
+                elif val == "no": processed_data[key] = 0
+                else: processed_data[key] = value.title() # Keep original casing for categorical
+            else:
+                processed_data[key] = value
+
+        features = []
+        for col in model.feature_names_in_:
+            val = processed_data.get(col)
+            
+            # If it's a categorical column that needs encoding
+            if col in label_encoders:
+                # If value is somehow missing, use a placeholder
+                if val is None: val = "Unknown"
+                val = str(val) # Ensure string for encoder
+                encoded_val = label_encoders[col].transform([val])[0]
+                features.append(encoded_val)
+            else:
+                # It is a number (Rainfall, Temp, etc.) -> Convert to Float
+                try:
+                    features.append(float(val))
+                except:
+                    features.append(0.0) # Safe fallback
+
+        # Convert to numpy array to fix "Unicode-2" error
+        final_features = np.array([features])
+        prediction = round(float(model.predict(final_features)[0]), 2)
+        
+        return jsonify({"predicted_crop_yield": prediction})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+# --- OTHER ROUTES ---
 @app.route("/register-farmer", methods=["POST"])
 @app.route("/register_farmer", methods=["POST"])
 def register_farmer():
@@ -156,41 +190,45 @@ def register_farmer():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# --- MATCHING ---
+@app.route("/submit-crop", methods=["POST"])
+def submit_crop():
+    try:
+        data = request.json
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO crops (farmer_id, crop_name, quantity, expected_price, season) VALUES (?, ?, ?, ?, ?)",
+                       (data.get('farmer_id'), data.get('crop_name'), data.get('quantity'), data.get('expected_price'), data.get('season')))
+        conn.commit()
+        conn.close()
+        return jsonify({"message": "Crop submitted!"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route("/find_matches", methods=["POST"])
 @app.route("/match_crops", methods=["POST"])
 @app.route("/match-crops", methods=["POST"])
 def find_matches():
     try:
         data = request.json
-        # Handle all possible input keys
         crop_name = (data.get('preferred_crop') or data.get('crop') or data.get('crop_name') or '').strip().lower()
         location_filter = (data.get('location') or data.get('city') or '').strip().lower()
 
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
-        
-        # Robust Search Query
         query = '''SELECT f.name, f.contact, f.location, c.crop_name, c.quantity, c.expected_price, c.id 
-                   FROM farmers f JOIN crops c ON f.id = c.farmer_id 
-                   WHERE LOWER(c.crop_name) LIKE ?'''
+                   FROM farmers f JOIN crops c ON f.id = c.farmer_id WHERE LOWER(c.crop_name) LIKE ?'''
         params = [f'%{crop_name}%']
-        
         if location_filter:
             query += " AND LOWER(f.location) LIKE ?"
             params.append(f'%{location_filter}%')
-            
         cursor.execute(query, params)
         rows = cursor.fetchall()
         conn.close()
-        
         results = [{"farmer_name": r[0], "contact": r[1], "location": r[2], "crop_name": r[3], "quantity": r[4], "expected_price": r[5], "crop_id": r[6]} for r in rows]
         return jsonify(results)
     except Exception as e:
-        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
-# --- PREDICT DISEASE ---
 @app.route("/predict-disease", methods=["POST"])
 def predict_disease():
     try:
@@ -200,55 +238,35 @@ def predict_disease():
         file.save(file_path)
 
         if interpreter is None: return jsonify({"error": "Disease model not loaded."}), 500
-
         img = Image.open(file_path).resize((128, 128))
         img_array = image.img_to_array(img) / 255.0
         img_array = np.expand_dims(img_array, axis=0).astype(np.float32)
-
         interpreter.set_tensor(input_details[0]['index'], img_array)
         interpreter.invoke()
         preds = interpreter.get_tensor(output_details[0]['index'])[0]
         
         predicted_class = class_names[np.argmax(preds)] if len(class_names) > np.argmax(preds) else f"Class {np.argmax(preds)}"
-        
-        # Simple severity calculation
-        severity_val = round(float(np.max(preds) * 100), 2)
-        
-        return jsonify({"prediction": predicted_class, "confidence": severity_val, "severity": severity_val})
+        severity = round(float(np.max(preds) * 100), 2)
+        return jsonify({"prediction": predicted_class, "confidence": severity, "severity": severity})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# --- FRONTEND SERVING (ABSOLUTE PATHS) ---
+# --- FRONTEND SERVING ---
 @app.route('/')
 def serve_index():
-    # Define exact folder paths
     public_path = os.path.join(BASE_DIR, 'public')
     temp_path = os.path.join(BASE_DIR, 'temp')
-
-    # Priority 1: public/index.html
-    if os.path.exists(os.path.join(public_path, 'index.html')):
-        return send_from_directory(public_path, 'index.html')
-    
-    # Priority 2: temp/index.html
-    if os.path.exists(os.path.join(temp_path, 'index.html')):
-        return send_from_directory(temp_path, 'index.html')
-        
-    # Priority 3: Root index.html
-    if os.path.exists(os.path.join(BASE_DIR, 'index.html')):
-        return send_from_directory(BASE_DIR, 'index.html')
-        
-    return f"Error: Frontend not found.<br>Checked: {public_path}, {temp_path}, {BASE_DIR}"
+    if os.path.exists(os.path.join(public_path, 'index.html')): return send_from_directory(public_path, 'index.html')
+    if os.path.exists(os.path.join(temp_path, 'index.html')): return send_from_directory(temp_path, 'index.html')
+    if os.path.exists(os.path.join(BASE_DIR, 'index.html')): return send_from_directory(BASE_DIR, 'index.html')
+    return "Error: index.html not found"
 
 @app.route('/<path:filename>')
 def serve_static(filename):
     public_path = os.path.join(BASE_DIR, 'public')
     temp_path = os.path.join(BASE_DIR, 'temp')
-    
-    if os.path.exists(os.path.join(public_path, filename)):
-        return send_from_directory(public_path, filename)
-    if os.path.exists(os.path.join(temp_path, filename)):
-        return send_from_directory(temp_path, filename)
-        
+    if os.path.exists(os.path.join(public_path, filename)): return send_from_directory(public_path, filename)
+    if os.path.exists(os.path.join(temp_path, filename)): return send_from_directory(temp_path, filename)
     return send_from_directory(BASE_DIR, filename)
 
 if __name__ == "__main__":

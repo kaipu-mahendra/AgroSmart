@@ -59,7 +59,7 @@ chat_model = None
 def configure_chatbot():
     global chat_model
     try:
-        api_key = os.environ.get("GOOGLE_API_KEY", "AIzaSyDWravHPJcdoI8ijiz2L-sArfwdjupFHJg") # Replace if needed
+        api_key = os.environ.get("GOOGLE_API_KEY", "AIzaSyCCT-8Txzfpk4M0wilgT1sHx8KZh1CLKDc") # Replace if needed
         genai.configure(api_key=api_key)
         chat_model = genai.GenerativeModel("gemini-1.5-flash")
         print("✅ Chatbot Model Loaded")
@@ -240,11 +240,11 @@ def predict_disease():
 
 @app.route('/')
 def serve_index():
-    return send_from_directory('static', 'mod3.html') if os.path.exists('static/mod3.html') else "Frontend not found"
+    return send_from_directory('temp', 'mod3.html') if os.path.exists('temp/mod3.html') else "Frontend not found"
 
 @app.route('/<path:filename>')
 def serve_static(filename):
-    return send_from_directory('static', filename)
+    return send_from_directory('temp', filename)
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)

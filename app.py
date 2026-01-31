@@ -50,7 +50,7 @@ chat_model = None
 def configure_chatbot():
     global chat_model
     try:
-        api_key = os.environ.get("GOOGLE_API_KEY", "AIzaSyDWravHPJcdoI8ijiz2L-sArfwdjupFHJg") 
+        api_key = os.environ.get("GOOGLE_API_KEY", "AIzaSyCCT-8Txzfpk4M0wilgT1sHx8KZh1CLKDc") 
         genai.configure(api_key=api_key)
         
         # LIST OF MODELS TO TRY (In order of preference)

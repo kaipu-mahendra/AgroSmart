@@ -2,7 +2,8 @@ flask
 flask-cors
 google-generativeai>=0.7.0
 scikit-fuzzy
-pandas
+numpy<2.0.0
+pandas<2.0.0
 pillow
 tensorflow-cpu
 gunicorn

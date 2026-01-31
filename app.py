@@ -59,7 +59,7 @@ chat_model = None
 def configure_chatbot():
     global chat_model
     try:
-        # Using the key from your snippet
+        # Replace 'abcef' with your actual Google API Key if needed
         api_key = os.environ.get("GOOGLE_API_KEY", "AIzaSyCCT-8Txzfpk4M0wilgT1sHx8KZh1CLKDc") 
         genai.configure(api_key=api_key)
         chat_model = genai.GenerativeModel("gemini-1.5-flash")
@@ -236,28 +236,34 @@ def predict_disease():
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
-# --- 8. SMART FRONTEND ROUTING ---
+# --- 8. SMART FRONTEND ROUTING (The Fix) ---
 @app.route('/')
 def serve_index():
-    # Priority 1: Check 'index.html' in main folder (current directory)
-    if os.path.exists('index.html'):
-        return send_from_directory('.', 'index.html')
-    # Priority 2: Check 'index.html' inside 'temp' folder
+    # Priority 1: Check 'public/index.html' (Best Practice)
+    if os.path.exists('public/index.html'):
+        return send_from_directory('public', 'index.html')
+    # Priority 2: Check 'temp/index.html' (Your Current Setup)
     elif os.path.exists('temp/index.html'):
         return send_from_directory('temp', 'index.html')
-    # Priority 3: Check old name 'mod3.html'
+    # Priority 3: Check 'index.html' in Main Folder
+    elif os.path.exists('index.html'):
+        return send_from_directory('.', 'index.html')
+    # Priority 4: Check old 'mod3.html'
     elif os.path.exists('mod3.html'):
         return send_from_directory('.', 'mod3.html')
     
-    return "Error: Could not find index.html. Please ensure it is in the main folder or 'temp' folder."
+    return "Error: Could not find index.html. Please ensure it is in the 'public', 'temp', or main folder."
 
 @app.route('/<path:filename>')
 def serve_static(filename):
-    # Try serving from main folder first
-    if os.path.exists(filename):
-        return send_from_directory('.', filename)
-    # If not found, try serving from 'temp' folder
-    return send_from_directory('temp', filename)
+    # Check 'public' folder first
+    if os.path.exists(os.path.join('public', filename)):
+        return send_from_directory('public', filename)
+    # Check 'temp' folder second
+    if os.path.exists(os.path.join('temp', filename)):
+        return send_from_directory('temp', filename)
+    # Check main folder last
+    return send_from_directory('.', filename)
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)

@@ -59,7 +59,8 @@ chat_model = None
 def configure_chatbot():
     global chat_model
     try:
-        api_key = os.environ.get("GOOGLE_API_KEY", "AIzaSyCCT-8Txzfpk4M0wilgT1sHx8KZh1CLKDc") # Replace if needed
+        # Using the key from your snippet
+        api_key = os.environ.get("GOOGLE_API_KEY", "AIzaSyCCT-8Txzfpk4M0wilgT1sHx8KZh1CLKDc") 
         genai.configure(api_key=api_key)
         chat_model = genai.GenerativeModel("gemini-1.5-flash")
         print("✅ Chatbot Model Loaded")
@@ -112,7 +113,7 @@ try:
 except:
     fertilizer_df = pd.DataFrame()
 
-# C. TFLite Disease Model (The New Fix!)
+# C. TFLite Disease Model
 interpreter = None
 input_details = None
 output_details = None
@@ -125,11 +126,11 @@ try:
         input_details = interpreter.get_input_details()
         output_details = interpreter.get_output_details()
         
-        # Load class names if folder exists, else use placeholder
+        # Load class names if folder exists
         if os.path.exists("PlantVillage/train"):
             class_names = sorted(os.listdir("PlantVillage/train"))
         else:
-            # Fallback list - Update this list to match your actual 15 classes if possible
+            # Fallback list 
             class_names = ["Disease_1", "Disease_2", "Healthy"] 
             
         print("✅ TFLite Model Loaded Successfully")
@@ -235,15 +236,27 @@ def predict_disease():
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
-# Other routes (Registration, Funding, Matching) omitted for brevity but should be kept if you use them.
-# ... [Keep your register/investor routes here if you have them] ...
-
+# --- 8. SMART FRONTEND ROUTING ---
 @app.route('/')
 def serve_index():
-    return send_from_directory('temp', 'mod3.html') if os.path.exists('temp/mod3.html') else "Frontend not found"
+    # Priority 1: Check 'index.html' in main folder (current directory)
+    if os.path.exists('index.html'):
+        return send_from_directory('.', 'index.html')
+    # Priority 2: Check 'index.html' inside 'temp' folder
+    elif os.path.exists('temp/index.html'):
+        return send_from_directory('temp', 'index.html')
+    # Priority 3: Check old name 'mod3.html'
+    elif os.path.exists('mod3.html'):
+        return send_from_directory('.', 'mod3.html')
+    
+    return "Error: Could not find index.html. Please ensure it is in the main folder or 'temp' folder."
 
 @app.route('/<path:filename>')
 def serve_static(filename):
+    # Try serving from main folder first
+    if os.path.exists(filename):
+        return send_from_directory('.', filename)
+    # If not found, try serving from 'temp' folder
     return send_from_directory('temp', filename)
 
 if __name__ == "__main__":

@@ -6,3 +6,7 @@ pandas
 pillow
 tensorflow-cpu
 gunicorn
+scipy
+networkx
+scikit-learn
+xgboost

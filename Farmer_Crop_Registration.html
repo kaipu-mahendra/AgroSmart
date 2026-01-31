@@ -311,7 +311,7 @@
 
       const data = { name, contact, location };
 
-      fetch("http://127.0.0.1:5000/register-farmer", {
+      fetch("/register-farmer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data)
@@ -349,7 +349,7 @@
         season: document.getElementById('season').value
       };
 
-      fetch("http://127.0.0.1:5000/submit-crop", {
+      fetch("/submit-crop", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data)

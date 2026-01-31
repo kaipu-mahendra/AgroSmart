@@ -20,7 +20,6 @@ os.environ["GRPC_VERBOSITY"] = "ERROR"
 os.environ["GLOG_minloglevel"] = "2"
 
 app = Flask(__name__)
-# Enable CORS for all routes to prevent connection errors
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Folders
@@ -36,15 +35,12 @@ def init_db():
         conn = sqlite3.connect(DB_NAME)
         cursor = conn.cursor()
         
-        # Farmers Table
         cursor.execute('''CREATE TABLE IF NOT EXISTS farmers 
                           (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, contact TEXT, location TEXT)''')
         
-        # Crops Table (Linked to Farmers)
         cursor.execute('''CREATE TABLE IF NOT EXISTS crops 
                           (id INTEGER PRIMARY KEY AUTOINCREMENT, farmer_id INTEGER, crop_name TEXT, quantity REAL, expected_price REAL, season TEXT)''')
         
-        # Predictions Table
         cursor.execute('''CREATE TABLE IF NOT EXISTS predictions 
                           (id INTEGER PRIMARY KEY AUTOINCREMENT, region TEXT, soil_type TEXT, crop TEXT, rainfall_mm REAL, temperature_celsius REAL, fertilizer_used INTEGER, irrigation_used INTEGER, weather_condition TEXT, days_to_harvest INTEGER, predicted_yield REAL)''')
         
@@ -63,7 +59,7 @@ def configure_chatbot():
     try:
         api_key = os.environ.get("GOOGLE_API_KEY", "AIzaSyDWravHPJcdoI8ijiz2L-sArfwdjupFHJg") 
         genai.configure(api_key=api_key)
-        chat_model = genai.GenerativeModel("gemini-pro") # Using stable model
+        chat_model = genai.GenerativeModel("gemini-pro") 
         print("✅ Chatbot Model Loaded (gemini-pro)")
     except Exception as e:
         print(f"❌ Chatbot Setup Error: {e}")
@@ -146,46 +142,73 @@ def chat():
     except Exception as e:
         return jsonify({"reply": f"Error: {str(e)}"})
 
-# --- FARMER REGISTRATION (FIXED) ---
+# --- 1. FARMER REGISTRATION (Matches your HTML /register-farmer) ---
+@app.route("/register-farmer", methods=["POST"])  # Hyphenated route to match HTML
 @app.route("/register_farmer", methods=["POST"])
 def register_farmer():
     try:
         data = request.json
-        # Debug print
-        print("Received Registration Data:", data)
+        print("📥 Registering Farmer:", data)
         
+        name = data.get('name')
+        contact = data.get('contact')
+        location = data.get('location')
+        
+        if not name or not contact:
+             return jsonify({"error": "Name and Contact are required"}), 400
+
         conn = sqlite3.connect(DB_NAME)
         cursor = conn.cursor()
-        
-        # Insert Farmer
-        cursor.execute("INSERT INTO farmers (name, contact, location) VALUES (?, ?, ?)", 
-                       (data.get('name'), data.get('contact'), data.get('location')))
+        cursor.execute("INSERT INTO farmers (name, contact, location) VALUES (?, ?, ?)", (name, contact, location))
         farmer_id = cursor.lastrowid
-        
-        # If crop data is also sent, insert it
-        if 'crop' in data:
-            cursor.execute("INSERT INTO crops (farmer_id, crop_name, quantity, expected_price, season) VALUES (?, ?, ?, ?, ?)",
-                           (farmer_id, data.get('crop'), data.get('quantity', 0), data.get('price', 0), data.get('season', '')))
-        
         conn.commit()
         conn.close()
+        
         return jsonify({"message": "Farmer registered successfully!", "farmer_id": farmer_id})
     except Exception as e:
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
-# --- SMART CROP MATCHING (NEW) ---
+# --- 2. CROP SUBMISSION (Matches your HTML /submit-crop) ---
+@app.route("/submit-crop", methods=["POST"])
+def submit_crop():
+    try:
+        data = request.json
+        print("📥 Submitting Crop:", data)
+        
+        farmer_id = data.get('farmer_id')
+        crop_name = data.get('crop_name')
+        quantity = data.get('quantity')
+        price = data.get('expected_price')
+        season = data.get('season')
+
+        if not farmer_id or not crop_name:
+            return jsonify({"error": "Farmer ID and Crop Name are required"}), 400
+
+        conn = sqlite3.connect(DB_NAME)
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO crops (farmer_id, crop_name, quantity, expected_price, season) VALUES (?, ?, ?, ?, ?)",
+                       (farmer_id, crop_name, quantity, price, season))
+        conn.commit()
+        conn.close()
+
+        return jsonify({"message": "Crop submitted successfully!"})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+# --- 3. CROP MATCHING (Matches Find_Crop.html /find_matches) ---
 @app.route("/find_matches", methods=["POST"])
+@app.route("/match_crops", methods=["POST"])
 def find_matches():
     try:
         data = request.json
-        crop_name = data.get('crop', '').strip().lower()
-        location_filter = data.get('location', '').strip().lower()
+        crop_name = (data.get('crop') or data.get('crop_name') or '').strip().lower()
+        location_filter = (data.get('location') or data.get('city') or '').strip().lower()
 
         conn = sqlite3.connect(DB_NAME)
         cursor = conn.cursor()
         
-        # Join Farmers and Crops to find matches
         query = '''
             SELECT f.name, f.contact, f.location, c.crop_name, c.quantity, c.expected_price 
             FROM farmers f
@@ -283,17 +306,18 @@ def predict_disease():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# --- 7. FILE SERVING (Using 'public' folder) ---
+# --- 7. FILE SERVING ---
 @app.route('/')
 def serve_index():
-    if os.path.exists('public/index.html'):
-        return send_from_directory('public', 'index.html')
-    return "Error: Could not find public/index.html."
+    if os.path.exists('public/index.html'): return send_from_directory('public', 'index.html')
+    if os.path.exists('temp/index.html'): return send_from_directory('temp', 'index.html')
+    if os.path.exists('index.html'): return send_from_directory('.', 'index.html')
+    return "Error: Could not find index.html."
 
 @app.route('/<path:filename>')
 def serve_static(filename):
-    if os.path.exists(os.path.join('public', filename)):
-        return send_from_directory('public', filename)
+    if os.path.exists(os.path.join('public', filename)): return send_from_directory('public', filename)
+    if os.path.exists(os.path.join('temp', filename)): return send_from_directory('temp', filename)
     return send_from_directory('.', filename)
 
 if __name__ == "__main__":

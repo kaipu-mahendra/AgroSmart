@@ -1,0 +1,60 @@
+crop_name,disease_name,fertilizer_name,quantity_to_use
+Rice,Bacterial blight,Zinc sulfate,25 kg/ha
+Rice,Blast,Potassium chloride,40 kg/ha
+Rice,Brown spot,Balanced NPK,100 kg/ha (NPK 20-20-0)
+Rice,Tungro,Neem cake + Potash,150 kg/ha
+Cotton,Bacterial blight,NPK + Boron,50 kg/ha + 1 kg Boron
+Cotton,Fusarium wilt,Organic compost + Potash,5 tons compost + 60 kg K
+Cotton,Curl virus,Neem-based fertilizer,100 kg/ha
+Eggplant,Leaf spot disease,Balanced NPK,75 kg/ha
+Eggplant,Mosaic virus disease,Vermicompost,4 tons/ha
+Eggplant,White mold disease,Trichoderma enriched compost,5 tons/ha
+Eggplant,Wilt disease,Biofertilizer (Pseudomonas),1 L/acre (seed treatment)
+Wheat,Stripe rust,Potassium nitrate,25 kg/ha
+Wheat,Septoria,Sulfur-based fertilizer,20 kg/ha
+Chilli,Leaf spot disease,NPK + Calcium nitrate,80 kg/ha + 20 kg/ha
+Chilli,Whitefly infestation,Neem cake,150 kg/ha
+Chilli,Chilli leaf curl virus,Vermicompost + Potash,3 tons/ha + 50 kg/ha
+Chilli,Mosaic virus,FYM + Zinc sulfate,5 tons/ha + 25 kg/ha
+Sugarcane,Red rot,Organic compost,10 tons/ha
+Sugarcane,Smut,Potassium chloride,50 kg/ha
+Sugarcane,Ratoon Stunting Disease,Urea + FYM,60 kg/ha + 10 tons/ha
+Sugarcane,Leaf Scald,Balanced NPK,80 kg/ha
+Sugarcane,Grassy Shoot Disease,Tricho + Phosphate solubilizer,1 L/acre + 1 kg/ha
+Sugarcane,Mosaic Virus,Vermicompost,5 tons/ha
+Sugarcane,Pokkah Boeng,FYM + Lime,5 tons/ha + 1 ton/ha
+Sugarcane,Rust,Sulfur + Potassium sulfate,20 kg/ha + 30 kg/ha
+Tomato,Bacterial spot,Copper-based fungicide,2-4 kg/ha
+Tomato,Early blight,Chlorothalonil or Mancozeb,1.5-2 kg/ha
+Tomato,Late blight,Metalaxyl + Mancozeb,2.5 kg/ha
+Tomato,Leaf Mold,Sulfur-based fungicide,3-5 kg/ha
+Tomato,Septoria leaf spot,Chlorothalonil,1.5-2 kg/ha
+Tomato,Spider mites,Neem oil or miticide,Spray 10 ml/L
+Tomato,Target Spot,Chlorothalonil,1.5-2 kg/ha
+Tomato,Tomato Yellow Leaf Curl Virus,Imidacloprid,100 ml/acre
+Tomato,Tomato mosaic virus,Virus-free seeds + Fertilizer NPK,100 kg/ha
+Tomato,healthy,NPK (10-10-10),100 kg/ha
+Corn,Cercospora leaf spot,Azoxystrobin,150 ml/acre
+Corn,Common rust,Propiconazole,300 ml/acre
+Corn,Northern Leaf Blight,Mancozeb,2 kg/ha
+Corn,healthy,NPK (20-20-0),120 kg/ha
+Soybean,healthy,NPK + Rhizobium inoculant,100 kg/ha
+Potato,Early blight,Chlorothalonil,2 kg/ha
+Potato,Late blight,Mancozeb + Metalaxyl,2.5 kg/ha
+Potato,healthy,NPK (10-26-26),100 kg/ha
+Pepper,Bacterial spot,Copper hydroxide,2 kg/ha
+Pepper,healthy,NPK + Micronutrients,100 kg/ha
+Apple,Apple scab,Captan,2.5 kg/ha
+Apple,Black rot,Ziram,3 kg/ha
+Apple,Cedar apple rust,Myclobutanil,1.5 kg/ha
+Apple,healthy,NPK (10-10-10),150 kg/tree/year
+Grape,Black rot,Myclobutanil,1.5 kg/ha
+Grape,Esca (Black Measles),"No cure, manage with pruning",N/A
+Grape,Leaf blight,Mancozeb,2 kg/ha
+Grape,healthy,FYM + NPK,20 tons/ha + 100 kg/ha
+Peach,Bacterial spot,Copper fungicide,3 kg/ha
+Peach,healthy,NPK + Compost,100 kg/ha
+Orange,Citrus greening,"No cure, apply Zinc + Micronutrients",As per soil test
+Cherry,Powdery mildew,Sulfur spray,3 kg/ha
+Cherry,healthy,NPK + Organic manure,80 kg/ha
+Raspberry,healthy,Compost + NPK,50 kg/ha

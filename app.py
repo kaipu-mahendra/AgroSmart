@@ -52,15 +52,32 @@ def init_db():
 
 init_db()
 
-# --- 3. CHATBOT SETUP ---
+# --- 3. SMART CHATBOT SETUP (Auto-Fixing) ---
 chat_model = None
 def configure_chatbot():
     global chat_model
     try:
-        api_key = os.environ.get("GOOGLE_API_KEY", "AIzaSyDWravHPJcdoI8ijiz2L-sArfwdjupFHJg") 
+        api_key = os.environ.get("GOOGLE_API_KEY", "AIzaSyCCT-8Txzfpk4M0wilgT1sHx8KZh1CLKDc") 
         genai.configure(api_key=api_key)
-        chat_model = genai.GenerativeModel("gemini-pro") 
-        print("✅ Chatbot Model Loaded (gemini-pro)")
+        
+        # List of models to try in order of preference
+        models_to_try = ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-pro", "gemini-1.0-pro"]
+        
+        for model_name in models_to_try:
+            try:
+                print(f"🔄 Attempting to load model: {model_name}...")
+                model = genai.GenerativeModel(model_name)
+                # Test the model with a simple "Hello" to see if it works
+                model.generate_content("Test")
+                chat_model = model
+                print(f"✅ Success! Chatbot connected using: {model_name}")
+                return # Stop looking, we found a working one
+            except Exception as e:
+                print(f"⚠️ {model_name} failed. Trying next...")
+                continue
+                
+        print("❌ All Chatbot models failed. Please check your API Key or Library version.")
+
     except Exception as e:
         print(f"❌ Chatbot Setup Error: {e}")
 
@@ -111,8 +128,8 @@ interpreter = None
 input_details = None
 output_details = None
 
-# --- HARDCODED CLASS NAMES (FIXES "Class 7" ERROR) ---
-# These are the standard 38 classes. If your model has different classes, update this list!
+# --- HARDCODED CLASS NAMES ---
+# Explicitly listing names solves the "Class 7" issue if the folder is missing
 class_names = [
     'Apple___Apple_scab', 'Apple___Black_rot', 'Apple___Cedar_apple_rust', 'Apple___healthy',
     'Blueberry___healthy', 'Cherry_(including_sour)___Powdery_mildew', 'Cherry_(including_sour)___healthy',
@@ -150,12 +167,14 @@ def chat():
         user_message = data.get('message')
         if not user_message: return jsonify({"reply": "Please type a message."})
         if chat_model:
+            # We already tested the model in configure_chatbot, so this should work
             response = chat_model.generate_content(f"You are AgroBot. Answer concisely: {user_message}")
             return jsonify({"reply": response.text})
-        return jsonify({"reply": "Chatbot is initializing..."})
+        return jsonify({"reply": "Chatbot is currently unavailable. Please try again later."})
     except Exception as e:
         return jsonify({"reply": f"Error: {str(e)}"})
 
+# --- 1. FARMER REGISTRATION ---
 @app.route("/register-farmer", methods=["POST"])
 @app.route("/register_farmer", methods=["POST"])
 def register_farmer():
@@ -177,6 +196,7 @@ def register_farmer():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# --- 2. CROP SUBMISSION ---
 @app.route("/submit-crop", methods=["POST"])
 def submit_crop():
     try:
@@ -196,6 +216,7 @@ def submit_crop():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# --- 3. CROP MATCHING ---
 @app.route("/find_matches", methods=["POST"])
 @app.route("/match_crops", methods=["POST"])
 @app.route("/match-crops", methods=["POST"])
@@ -269,10 +290,10 @@ def predict_disease():
 
         confidence_val = float(np.max(preds) * 100)
         
-        # --- FIX: Use Hardcoded Class Names ---
+        # --- CLASS NAME FIX ---
         if len(class_names) > np.argmax(preds):
             predicted_class = class_names[np.argmax(preds)]
-            # Clean up the name (remove underscores)
+            # Beautify name (Apple___Black_rot -> Apple - Black rot)
             predicted_class = predicted_class.replace("___", " - ").replace("_", " ")
         else:
             predicted_class = f"Class {np.argmax(preds)}"

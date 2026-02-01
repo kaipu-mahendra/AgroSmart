@@ -64,8 +64,7 @@ def configure_chatbot():
         genai.configure(api_key=api_key)
 
         models_to_try = [
-            "models/gemini-1.5-flash",
-            "models/gemini-1.5-pro"
+            "gemini-pro"
         ]
 
         for model_name in models_to_try:

@@ -12,7 +12,7 @@ import tensorflow as tf
 from tensorflow.keras.preprocessing import image
 import skfuzzy as fuzz
 from skfuzzy import control as ctrl
-import google.generativeai as genai
+from google import genai
 
 # --- 1. CONFIGURATION ---
 warnings.filterwarnings("ignore")

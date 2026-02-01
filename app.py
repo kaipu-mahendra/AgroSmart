@@ -12,7 +12,7 @@ import tensorflow as tf
 from tensorflow.keras.preprocessing import image
 import skfuzzy as fuzz
 from skfuzzy import control as ctrl
-from google import genai
+from groq import Groq
 
 # --- 1. CONFIGURATION ---
 warnings.filterwarnings("ignore")
@@ -51,26 +51,18 @@ init_db()
 
 
 # --- 3. CHATBOT SETUP (FINAL FIX – STABLE) ---
-# --- 3. CHATBOT SETUP (FINAL – OFFICIAL SDK) ---
 chat_client = None
 
 def configure_chatbot():
     global chat_client
     try:
-        api_key = os.environ.get("GOOGLE_API_KEY")
+        api_key = os.environ.get("GROQ_API_KEY")
         if not api_key:
-            print("❌ GOOGLE_API_KEY not found")
+            print("❌ GROQ_API_KEY not found")
             return
 
-        chat_client = genai.Client(api_key=api_key)
-
-        # test call
-        chat_client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents="Hello"
-        )
-
-        print("✅ Chatbot ready: gemini-2.0-flash")
+        chat_client = Groq(api_key=api_key)
+        print("✅ Groq chatbot initialized")
 
     except Exception as e:
         print(f"❌ Chatbot Setup Error: {e}")
@@ -157,23 +149,27 @@ except Exception as e:
 def chat():
     try:
         data = request.get_json()
-        user_message = (data.get('message') or "").strip()
+        user_message = (data.get("message") or "").strip()
 
         if not user_message:
-            return jsonify({"reply": "Please ask something about crops 🌱"})
+            return jsonify({"reply": "Please ask something about farming 🌱"})
 
         if not chat_client:
-            return jsonify({"reply": "Chatbot unavailable. Updating server..."})
+            return jsonify({"reply": "Chatbot unavailable right now."})
 
-        response = chat_client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=f"You are AgroBot AI for farmers. Answer clearly and briefly.\nUser: {user_message}"
+        response = chat_client.chat.completions.create(
+            model="llama3-70b-8192",
+            messages=[
+                {"role": "system", "content": "You are AgroBot, an AI assistant for farmers."},
+                {"role": "user", "content": user_message}
+            ],
+            temperature=0.4,
         )
 
-        return jsonify({"reply": response.text})
+        return jsonify({"reply": response.choices[0].message.content})
 
     except Exception as e:
-        return jsonify({"reply": "Chatbot error. Please try again later."})
+        return jsonify({"reply": "⚠️ Chatbot error. Please try again later."})
 
 # --- REGISTRATION ---
 @app.route("/register-farmer", methods=["POST"])

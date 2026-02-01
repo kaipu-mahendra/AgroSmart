@@ -1,9 +1,9 @@
 flask
 flask-cors
-google-genai>=0.3.0
 scikit-fuzzy
 numpy<2.0.0
 pandas<2.0.0
+groq
 pillow
 tensorflow-cpu
 gunicorn

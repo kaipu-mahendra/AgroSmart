@@ -65,7 +65,7 @@ def configure_chatbot():
 
         try:
             print("🔄 Connecting to gemini-pro...")
-            model = genai.GenerativeModel("gemini-pro")
+            model = genai.GenerativeModel("models/gemini-pro")
             model.generate_content("Hello")  # test call
             chat_model = model
             print("✅ Chatbot ready: gemini-pro")

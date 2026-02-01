@@ -12,7 +12,7 @@ import tensorflow as tf
 from tensorflow.keras.preprocessing import image
 import skfuzzy as fuzz
 from skfuzzy import control as ctrl
-from google import genai
+import google.generativeai as genai
 
 # --- 1. CONFIGURATION ---
 warnings.filterwarnings("ignore")
@@ -50,7 +50,7 @@ def init_db():
 init_db()
 
 
-# --- 3. CHATBOT SETUP (FIX ONLY HERE) ---
+# --- 3. CHATBOT SETUP (FINAL FIX – STABLE) ---
 chat_model = None
 
 def configure_chatbot():
@@ -63,27 +63,20 @@ def configure_chatbot():
 
         genai.configure(api_key=api_key)
 
-        models_to_try = [
-            "gemini-pro"
-        ]
-
-        for model_name in models_to_try:
-            try:
-                print(f"🔄 Connecting to {model_name}...")
-                model = genai.GenerativeModel(model_name)
-                model.generate_content("Hello")  # test call
-                chat_model = model
-                print(f"✅ Chatbot ready: {model_name}")
-                return
-            except Exception as e:
-                print(f"⚠️ Failed loading {model_name}: {e}")
-
-        print("❌ All Gemini models failed")
+        try:
+            print("🔄 Connecting to gemini-pro...")
+            model = genai.GenerativeModel("gemini-pro")
+            model.generate_content("Hello")  # test call
+            chat_model = model
+            print("✅ Chatbot ready: gemini-pro")
+        except Exception as e:
+            print(f"❌ Chatbot model load failed: {e}")
 
     except Exception as e:
         print(f"❌ Chatbot Setup Error: {e}")
 
 configure_chatbot()
+             
 
 # --- 4. FUZZY LOGIC SETUP ---
 confidence = ctrl.Antecedent(np.arange(0, 101, 1), 'confidence')

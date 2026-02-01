@@ -12,7 +12,7 @@ import tensorflow as tf
 from tensorflow.keras.preprocessing import image
 import skfuzzy as fuzz
 from skfuzzy import control as ctrl
-import google.generativeai as genai
+from google import genai
 
 # --- 1. CONFIGURATION ---
 warnings.filterwarnings("ignore")
@@ -51,27 +51,26 @@ init_db()
 
 
 # --- 3. CHATBOT SETUP (FINAL FIX – STABLE) ---
-# --- 3. CHATBOT SETUP (FINAL – GUARANTEED WORKING) ---
-chat_model = None
+# --- 3. CHATBOT SETUP (FINAL – OFFICIAL SDK) ---
+chat_client = None
 
 def configure_chatbot():
-    global chat_model
+    global chat_client
     try:
         api_key = os.environ.get("GOOGLE_API_KEY")
         if not api_key:
             print("❌ GOOGLE_API_KEY not found")
             return
 
-        genai.configure(api_key=api_key)
+        chat_client = genai.Client(api_key=api_key)
 
-        try:
-            print("🔄 Connecting to models/text-bison-001...")
-            model = genai.GenerativeModel("models/text-bison-001")
-            model.generate_content("Hello")  # test
-            chat_model = model
-            print("✅ Chatbot ready: models/text-bison-001")
-        except Exception as e:
-            print(f"❌ Chatbot model load failed: {e}")
+        # test call
+        chat_client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents="Hello"
+        )
+
+        print("✅ Chatbot ready: gemini-2.0-flash")
 
     except Exception as e:
         print(f"❌ Chatbot Setup Error: {e}")
@@ -157,15 +156,24 @@ except Exception as e:
 @app.route('/chat', methods=['POST'])
 def chat():
     try:
-        data = request.json
-        user_message = data.get('message')
-        if not chat_model:
+        data = request.get_json()
+        user_message = (data.get('message') or "").strip()
+
+        if not user_message:
+            return jsonify({"reply": "Please ask something about crops 🌱"})
+
+        if not chat_client:
             return jsonify({"reply": "Chatbot unavailable. Updating server..."})
-        
-        response = chat_model.generate_content(f"You are AgroBot. Answer concisely: {user_message}")
+
+        response = chat_client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=f"You are AgroBot AI for farmers. Answer clearly and briefly.\nUser: {user_message}"
+        )
+
         return jsonify({"reply": response.text})
+
     except Exception as e:
-        return jsonify({"reply": f"Error: {str(e)}"})
+        return jsonify({"reply": "Chatbot error. Please try again later."})
 
 # --- REGISTRATION ---
 @app.route("/register-farmer", methods=["POST"])

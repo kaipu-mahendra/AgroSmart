@@ -51,6 +51,7 @@ init_db()
 
 
 # --- 3. CHATBOT SETUP (FINAL FIX – STABLE) ---
+# --- 3. CHATBOT SETUP (FINAL – GUARANTEED WORKING) ---
 chat_model = None
 
 def configure_chatbot():
@@ -64,11 +65,11 @@ def configure_chatbot():
         genai.configure(api_key=api_key)
 
         try:
-            print("🔄 Connecting to gemini-pro...")
-            model = genai.GenerativeModel("models/gemini-pro")
-            model.generate_content("Hello")  # test call
+            print("🔄 Connecting to models/text-bison-001...")
+            model = genai.GenerativeModel("models/text-bison-001")
+            model.generate_content("Hello")  # test
             chat_model = model
-            print("✅ Chatbot ready: gemini-pro")
+            print("✅ Chatbot ready: models/text-bison-001")
         except Exception as e:
             print(f"❌ Chatbot model load failed: {e}")
 

@@ -149,7 +149,7 @@ except Exception as e:
 @app.route('/chat', methods=['POST'])
 def chat():
     try:
-        data = request.get_json(force=True)
+        data = request.get_json()
         user_message = (data.get("message") or "").strip()
 
         if not user_message:
@@ -158,8 +158,9 @@ def chat():
         if not chat_client:
             return jsonify({"reply": "Chatbot unavailable right now."})
 
-        completion = chat_client.chat.completions.create(
-            model="llama3-8b-8192",  # safer & faster than 70B for free tier
+        # ✅ CORRECT Groq API usage
+        response = chat_client.chat.completions.create(
+            model="llama3-8b-8192",
             messages=[
                 {"role": "system", "content": "You are AgroBot, an AI assistant for farmers."},
                 {"role": "user", "content": user_message}
@@ -168,17 +169,13 @@ def chat():
             max_tokens=300
         )
 
-        # ✅ SAFE RESPONSE EXTRACTION
-        reply_text = completion.choices[0].message.content.strip()
-        return jsonify({"reply": reply_text})
+        reply = response.choices[0].message.content
+        return jsonify({"reply": reply})
 
     except Exception as e:
-        # 🔍 Log real error in Render logs
-        print("❌ Chat error:", str(e))
-        return jsonify({
-            "reply": "⚠️ Chatbot error. Please try again later."
-        })
-
+        print("❌ Chat error:", traceback.format_exc())
+        return jsonify({"reply": "⚠️ Chatbot error. Please try again later."})
+   
 # --- REGISTRATION ---
 @app.route("/register-farmer", methods=["POST"])
 @app.route("/register_farmer", methods=["POST"])

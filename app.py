@@ -148,33 +148,34 @@ except Exception as e:
 # --- 6. ROUTES ---
 @app.route('/chat', methods=['POST'])
 def chat():
+    data = request.get_json()
+    user_message = data.get("message", "").strip()
+
+    print("🟢 /chat called with:", user_message)
+
+    if not user_message:
+        return jsonify({"reply": "Please ask something about crops 🌱"})
+
+    if chat_client is None:
+        return jsonify({"reply": "Chatbot unavailable (client not initialized)."})
+
     try:
-        data = request.get_json()
-        user_message = (data.get("message") or "").strip()
-
-        if not user_message:
-            return jsonify({"reply": "Please ask something about crops 🌱"})
-
-        if not chat_client:
-            return jsonify({"reply": "Chatbot unavailable right now."})
-
-        # ✅ CORRECT Groq API usage
         response = chat_client.chat.completions.create(
             model="llama3-8b-8192",
             messages=[
                 {"role": "system", "content": "You are AgroBot, an AI assistant for farmers."},
                 {"role": "user", "content": user_message}
-            ],
-            temperature=0.4,
-            max_tokens=300
+            ]
         )
 
         reply = response.choices[0].message.content
+        print("🟢 Groq reply:", reply)
         return jsonify({"reply": reply})
 
     except Exception as e:
-        print("❌ Chat error:", traceback.format_exc())
-        return jsonify({"reply": "⚠️ Chatbot error. Please try again later."})
+        print("🔴 GROQ FAILURE TRACEBACK ↓↓↓")
+        traceback.print_exc()
+        return jsonify({"reply": "⚠️ Chatbot backend failure (see logs)."})
    
 # --- REGISTRATION ---
 @app.route("/register-farmer", methods=["POST"])

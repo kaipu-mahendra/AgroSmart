@@ -175,7 +175,7 @@ def chat():
     except Exception as e:
         print("🔴 GROQ FAILURE TRACEBACK ↓↓↓")
         traceback.print_exc()
-        return jsonify({"reply": "⚠️ Chatbot backend failure (see logs)."})
+        return jsonify({"reply": " Your API key might be expired or invalid. Please check your GROQ_API_KEY."})
    
 # --- REGISTRATION ---
 @app.route("/register-farmer", methods=["POST"])

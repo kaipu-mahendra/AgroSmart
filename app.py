@@ -51,6 +51,8 @@ init_db()
 
 
 # --- 3. CHATBOT SETUP (FINAL FIX – STABLE) ---
+
+
 chat_client = None
 
 def configure_chatbot():
@@ -144,32 +146,38 @@ except Exception as e:
     print(f"❌ Error loading TFLite: {e}")
 
 # --- 6. ROUTES ---
-
 @app.route('/chat', methods=['POST'])
 def chat():
     try:
-        data = request.get_json()
+        data = request.get_json(force=True)
         user_message = (data.get("message") or "").strip()
 
         if not user_message:
-            return jsonify({"reply": "Please ask something about farming 🌱"})
+            return jsonify({"reply": "Please ask something about crops 🌱"})
 
         if not chat_client:
             return jsonify({"reply": "Chatbot unavailable right now."})
 
-        response = chat_client.chat.completions.create(
-            model="llama3-70b-8192",
+        completion = chat_client.chat.completions.create(
+            model="llama3-8b-8192",  # safer & faster than 70B for free tier
             messages=[
                 {"role": "system", "content": "You are AgroBot, an AI assistant for farmers."},
                 {"role": "user", "content": user_message}
             ],
             temperature=0.4,
+            max_tokens=300
         )
 
-        return jsonify({"reply": response.choices[0].message.content})
+        # ✅ SAFE RESPONSE EXTRACTION
+        reply_text = completion.choices[0].message.content.strip()
+        return jsonify({"reply": reply_text})
 
     except Exception as e:
-        return jsonify({"reply": "⚠️ Chatbot error. Please try again later."})
+        # 🔍 Log real error in Render logs
+        print("❌ Chat error:", str(e))
+        return jsonify({
+            "reply": "⚠️ Chatbot error. Please try again later."
+        })
 
 # --- REGISTRATION ---
 @app.route("/register-farmer", methods=["POST"])

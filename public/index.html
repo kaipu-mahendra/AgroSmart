@@ -413,21 +413,34 @@
         }
 
         const generateResponse = async (chatElement) => {
-            const messageElement = chatElement.querySelector("p");
-            try {
-                // Fetch call to Flask Backend
-                const response = await fetch("/chat", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ message: userMessage })
-                });
-                const data = await response.json();
-                messageElement.textContent = data.reply || "Server error.";
-            } catch (error) {
-                messageElement.textContent = "Oops! Connection error.";
-            }
-            chatbox.scrollTo(0, chatbox.scrollHeight);
+    const messageElement = chatElement.querySelector("p");
+
+    try {
+        const response = await fetch("/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: userMessage })
+        });
+
+        if (!response.ok) {
+            throw new Error("Server responded with error");
         }
+
+        const data = await response.json();
+
+        if (data && data.reply && data.reply.trim().length > 0) {
+            messageElement.textContent = data.reply;
+        } else {
+            messageElement.textContent = "🤖 I didn’t get that. Please rephrase your question.";
+        }
+
+    } catch (error) {
+        console.error("Chat error:", error);
+        messageElement.textContent = "⚠️ Chatbot is busy. Please try again in a moment.";
+    }
+
+    chatbox.scrollTo(0, chatbox.scrollHeight);
+};
 
         const handleChat = () => {
             userMessage = chatInput.value.trim();
